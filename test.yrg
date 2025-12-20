@@ -1,0 +1,12 @@
+... yargL
+... YARGin Language!
+
+yar mutableLocal = + 1 2
+yarg immutableLocal = * 4 2 // shut up yargine
+mutableGlobal = `strang`
+yarg zero: Int // shut up yargine
+// the comment above is the official way to silence any |yarg| warns.
+
+f someFunction(input) { // 0 typing on functions
+	return * input 2
+}
