@@ -39,13 +39,18 @@ typedef struct {
 	ystrIdx projName;
 } yarg;
 #pragma pack(pop)
-volatile sig_atomic_t running = 1, resized = 1;
-int w, h, fileIdx, dirStuffSz;
+volatile sig_atomic_t running = 1;
+volatile sig_atomic_t resized = 1;
+int w;
+int h;
+int fileIdx;
+int dirStuffSz;
 bool needsRender;
 struct termios oldt;
 c*err = "";
 c*dir;
-char**dirStuff;
+c*dirB4Enter;
+c**dirStuff;
 c**onlyDirs;
 int onlyDirsSz = 0;
 RenderMode renderM;
@@ -232,8 +237,10 @@ void switchBufs(int b) {
 __attribute__((destructor)) void cleanup() {
 	fflush(stdout);
 	switchBufs(1);
+	oldt.c_lflag |= ICANON | ECHO; // in case i fucked up someone's terminal
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	free(dir);
+	free(dirB4Enter);
 	freeJorked(dirStuff, dirStuffSz);
 	freeJorked(onlyDirs, onlyDirsSz);
 	if (*err==0) return;
@@ -293,6 +300,7 @@ void setupDirCnsts() {
 }
 
 int main(int argc, char**argv) {
+	dirB4Enter = malloc(1); // 100% freeable
 	dir = getcwd(NULL, 0);
 	setupDirCnsts();
 	struct termios newt;
@@ -382,7 +390,7 @@ int main(int argc, char**argv) {
 						if (renderM!=NONYARGWARN) break;
 						needsRender = true;
 						if (initCh==2) {
-							dir = getcwd(NULL, 0);
+							dir = dirB4Enter;
 							setupDirCnsts();
 							break;
 						}
@@ -434,6 +442,8 @@ int main(int argc, char**argv) {
 				case 10:
 				case 13: // fuckass windows
 					if (renderM!=PICK) break; // TODO: swap to switch case like on |case 27:|
+					dirB4Enter = calloc(strlen(dir)+1,sizeof(c));
+					strcpy(dirB4Enter,dir);
 					c full[PATH_MAX] = {0};
 					c real[PATH_MAX] = {0};
 					c*chosen = ".";
