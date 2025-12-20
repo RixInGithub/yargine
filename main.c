@@ -13,15 +13,32 @@
 #include <ctype.h>
 #include "jorkdir/jorkdir.h"
 #include "binaryen-c.h"
+#include "readline/readline.h"
+#include "readline/history.h"
+
 #define _getch getchar
+#define YSMAJOR 0 // this should only be changed when the structure's data types are swapped around.
 
 typedef enum {
 	PICK,
 	NONYARGWARN,
+	PROJSETUP,
 	PROJ
 } RenderMode;
 
+// strings file => "ystr.bin"
+// base project => "yarg.bin"
+
 typedef char c;
+typedef uint32_t ystrIdx; // 1-based. 0 = blank
+typedef c yHdr[4];
+#pragma pack(push,1)
+typedef struct {
+	yHdr hdr;
+	uint8_t majorVer;
+	ystrIdx projName;
+} yarg;
+#pragma pack(pop)
 volatile sig_atomic_t running = 1, resized = 1;
 int w, h, fileIdx, dirStuffSz;
 bool needsRender;
@@ -32,17 +49,110 @@ char**dirStuff;
 c**onlyDirs;
 int onlyDirsSz = 0;
 RenderMode renderM;
+yarg thisProj;
 
-// strings file => "ystr.bin"
-// base project => "yarg.bin"
+int __readline__startupHook() {
+	rl_insert_text(strrchr(dir,47)+1);
+	rl_point = rl_end;
+	return 0;
+}
 
-typedef struct {
-	c hdr[4];
-	int projNameIdx; // usually 0 idk
-} yarg;
+bool initYarg(c*name) {
+	c full[PATH_MAX] = {0};
+	snprintf(full, sizeof(full), "%s/%s", dir, "yarg.bin");
+	FILE*ygFile = fopen(full,"wb");
+	if (!(ygFile)) return false;
+	memset(&thisProj,0,sizeof(thisProj));
+	strncpy(thisProj.hdr, "YARG", 4);
+	thisProj.majorVer = YSMAJOR;
+	thisProj.projName = 1;
+	// TODO: more fields
+	if (fwrite(&thisProj,sizeof(thisProj),1,ygFile)!=1) {
+		fclose(ygFile);
+		return false;
+	}
+	fclose(ygFile);
+	memset(full,0,sizeof(full));
+	snprintf(full, sizeof(full), "%s/%s", dir, "ystr.bin");
+	/*
+		FILE*fChk = fopen(full,"r");
+		if (fChk) { // i'm doin ts cuz theres no wb + x
+			fclose(fChk);
+			return false;
+		}
+	*/
+	// save overhead every day™
+	FILE*yrFile = fopen(full,"wb");
+	if (!(yrFile)) return false;
+	fwrite("YSTR", 1, 4, yrFile);
+	uint32_t nameLen = (uint32_t)strlen(name);
+	if (fwrite(&nameLen,sizeof(uint32_t),1,yrFile)!=1) {
+		fclose(yrFile);
+		return false;
+	}
+	if (fwrite(name, 1, nameLen, yrFile) != nameLen) {
+		fclose(yrFile);
+		return false;
+	}
+	fclose(yrFile);
+	return true;
+}
 
-yarg*readYarg() {
+bool readYarg() {
+	c full[PATH_MAX] = {0};
+	snprintf(full, sizeof(full), "%s/%s", dir, "yarg.bin");
+	FILE*ygFile = fopen(full,"rb");
+	if (!(ygFile)) return false;
+	size_t amnt = fread(&thisProj, sizeof(thisProj), 1, ygFile);
+	fclose(ygFile);
+	if (amnt!=1) return false;
+	return strncmp(thisProj.hdr,"YARG",4)==0;
+}
 
+c*readYstr(ystrIdx idx) {
+	if (idx==0) return calloc(1,1); // null terminated blank string
+	uint32_t strSize;
+	ystrIdx zeroBased = idx-1;
+	int count = 0;
+	c full[PATH_MAX] = {0};
+	snprintf(full, sizeof(full), "%s/%s", dir, "ystr.bin");
+	FILE*yrFile = fopen(full,"rb");
+	if (!(yrFile)) return NULL;
+	yHdr ystrHdr;
+	if (fread(&ystrHdr, sizeof(yHdr), 1, yrFile)!=1) {
+		fclose(yrFile);
+		return NULL; // tehe segfault~ >:3
+	}
+	if (strncmp(ystrHdr,"YSTR",4)!=0) {
+		fclose(yrFile);
+		return NULL;
+	}
+	while (count<zeroBased) {
+		if (fread(&strSize, sizeof(uint32_t), 1, yrFile)!=1) {
+			fclose(yrFile);
+			return NULL;
+		}
+		if (fseek(yrFile, strSize, SEEK_CUR)!=0) {
+			fclose(yrFile);
+			return NULL;
+		}
+		count++;
+	}
+	if (fread(&strSize, sizeof(uint32_t), 1, yrFile)!=1) {
+		fclose(yrFile);
+		return NULL;
+	}
+	c*res = calloc(strSize+1,sizeof(c)); // strSize excludes null term, string itself 2!
+	if (!(res)) {
+		fclose(yrFile);
+		return NULL;
+	}
+	if (fread(res, strSize, 1, yrFile)!=1) {
+		fclose(yrFile);
+		return NULL;
+	}
+	fclose(yrFile);
+	return res;
 }
 
 bool isDir(c*p) {
@@ -83,10 +193,6 @@ void wipeDir(c*dr) {
 	freeJorked(jorked, jorkedSz);
 }
 
-void initYarg(c*name) {
-	;
-}
-
 void getTermSize() {
 	if (!(resized)) return;
 	resized = 0;
@@ -124,7 +230,6 @@ void switchBufs(int b) {
 }
 
 __attribute__((destructor)) void cleanup() {
-	printf("\x1b[?1003l\x1b[?1006l");
 	fflush(stdout);
 	switchBufs(1);
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
@@ -200,6 +305,7 @@ int main(int argc, char**argv) {
 	signal(SIGINT, exitHand);
 	signal(SIGTERM, exitHand);
 	signal(SIGWINCH, winch);
+	rl_startup_hook = __readline__startupHook;
 	while (running) {
 		if (resized) {
 			needsRender = true;
@@ -211,11 +317,11 @@ int main(int argc, char**argv) {
 				err = "sry, screen too smol :(";
 				return 1;
 			}
+			printf("\x1b[2J\x1b[H");
 			switch (renderM) {
 				case PICK:
 				case NONYARGWARN:
 					c*pad;
-					printf("\x1b[2J\x1b[H");
 					c*nls = calloc(h/10+1, sizeof(c)); // +1 for null term
 					memset(nls, 10, h/10);
 					c*name = "y \x20  a \x20  r \x20  g \x20  i \x20  n \x20  e \x20  !";
@@ -227,7 +333,7 @@ int main(int argc, char**argv) {
 					memset(pad, 32, padLen);
 					printf("%s%s\x1b[3%d;1m%s\x1b[0m\n%s", nls, pad, 1+((renderM!=NONYARGWARN)*4), name, nls);
 					if (renderM==NONYARGWARN) {
-						printf("the folder you selected was detected not a yargine project (or a yargine project for an older version of yargine.)\n");
+						printf("the folder you selected was detected not a yargine project (or a yargine project for an older/newer version of yargine.)\n");
 						printf("please select an action using the highlighted letters, then press enter.\n\n");
 						printf("\x1b[7mw\x1b[0mipe contents\n\x1b[7mc\x1b[0mancel");
 						break;
@@ -239,8 +345,23 @@ int main(int argc, char**argv) {
 					free(pad);
 					free(nls);
 					break;
+				case PROJSETUP:
+					printf("the folder you selected was eligible for a new yargine project or got fully wiped.\nplease take your time to set up your new project.\n\n\x1b[?25h");
+					newt.c_lflag |= ECHO;
+					tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+					c*pName = readline("project name: ");
+					newt.c_lflag &= ~ECHO;
+					tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+					printf("\x1b[?25l");
+					initYarg(pName);
+					renderM = PROJ;
+					needsRender = true;
+					break;
 				case PROJ:
-					printf("yargine!");
+					pName = readYstr(thisProj.projName);
+					printf("\x1b]0;\"%s\" - yargine\x1b\\\x1b[3m%s\x1b[0m - yargine", pName, pName);
+					free(pName);
+					break;
 				default:
 					err = "unknown render mode";
 					return 1;
@@ -259,13 +380,14 @@ int main(int argc, char**argv) {
 					case 22:
 					case 2:
 						if (renderM!=NONYARGWARN) break;
+						needsRender = true;
 						if (initCh==2) {
 							dir = getcwd(NULL, 0);
 							setupDirCnsts();
 							break;
 						}
 						wipeDir(dir);
-						renderM =
+						renderM = PROJSETUP;
 						break;
 					default: break;
 				}
@@ -282,7 +404,6 @@ int main(int argc, char**argv) {
 							if (ch>66) {
 								c full[PATH_MAX] = {0};
 								c real[PATH_MAX] = {0};
-								c*steppingStone;
 								c*toSn = "..";
 								if (ch==66+1) { // absolutely none of that 69 ripoff in my code
 									// this only executes user pressed right btw
@@ -294,7 +415,7 @@ int main(int argc, char**argv) {
 									err = "realpath failed";
 									return 1;
 								}
-								steppingStone = calloc(sizeof(c), strlen(real)+1);
+								c*steppingStone = calloc(sizeof(c), strlen(real)+1);
 								strcpy(steppingStone, real);
 								free(dir);
 								dir=steppingStone;
@@ -314,18 +435,48 @@ int main(int argc, char**argv) {
 				case 13: // fuckass windows
 					if (renderM!=PICK) break; // TODO: swap to switch case like on |case 27:|
 					c full[PATH_MAX] = {0};
-					snprintf(full, sizeof(full), "%s/%s", dir, onlyDirs[fileIdx]);
+					c real[PATH_MAX] = {0};
+					c*chosen = ".";
+					if (onlyDirsSz>0) chosen=onlyDirs[fileIdx];
+					snprintf(full, sizeof(full), "%s/%s", dir, chosen);
 					if (realpath(full,real)==NULL) {
 						err = "realpath failed";
 						return 1;
 					}
-					steppingStone = calloc(sizeof(c), strlen(real)+1);
+					c*steppingStone = calloc(sizeof(c), strlen(real)+1);
 					strcpy(steppingStone, real);
 					free(dir);
 					dir=steppingStone;
 					needsRender = true;
-					renderM = PROJ;
-					break;
+					bool yargValid = readYarg();
+					/*
+						snprintf(full, sizeof(full), "%s/%s", dir, "yarg.bin");
+						FILE*fChk1 = fopen(full,"r");
+						snprintf(full, sizeof(full), "%s/%s", dir, "ystr.bin");
+						FILE*fChk2 = fopen(full,"r");
+						bool filesExist = (fChk1)&&(fChk2);
+						if (fChk1) fclose(fChk1);
+						if (fChk2) fclose(fChk2);
+					*/
+					// day 2 of saving overhead every day™ (trust)
+					int isNonEmpty = 0;
+					c**jorked = jorkdir(dir, &isNonEmpty);
+					freeJorked(jorked, isNonEmpty); // instantaneously free the jorked
+					if (isNonEmpty>=1) isNonEmpty--; // exclude the |..| (there is no |.| in |jorkdir|)
+					if ((!(yargValid))&&(isNonEmpty)) {
+						renderM = NONYARGWARN;
+						break;
+					}
+					if ((!(isNonEmpty))&&(!(yargValid))) { // totally blank
+						renderM = PROJSETUP;
+						break;
+					}
+					if ((yargValid)&&(isNonEmpty)) { // explicitly check if non empty...
+						renderM = PROJ;
+						break;
+					}
+					err = "yargine files valid but basically nonexistent?? howz???"; // ...to let this happen someday
+					return 1;
 				default: break;
 			}
 		}
