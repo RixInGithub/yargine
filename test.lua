@@ -65,6 +65,6 @@ while #inp~=0 do
 			error(string.format("ye folk expected a symbol to yar%s", isConst and "g" or ""))
 		end
 		inp = inp:sub(2)
-		-- expressions tommorow
+		-- expressions tomorrow
 	end
 end
