@@ -41,6 +41,7 @@ typedef struct {
 #pragma pack(pop)
 volatile sig_atomic_t running = 1;
 volatile sig_atomic_t resized = 1;
+volatile sig_atomic_t canceled = 0;
 int w;
 int h;
 int fileIdx;
@@ -58,7 +59,7 @@ yarg thisProj;
 
 int __readline__startupHook() {
 	rl_insert_text(strrchr(dir,47)+1);
-	rl_point = rl_end;
+	rl_mark = 0;
 	return 0;
 }
 
@@ -354,6 +355,12 @@ void winch(int _) {
 
 void exitHand(int _) {
 	running=0;
+	canceled = 1;
+	rl_replace_line("", 0);
+	rl_point = 0;
+	rl_done = 1;
+	rl_pending_input = 10;
+	ssize_t satisfaction = write(1, "\n", 1); // shut up c
 }
 
 bool _kbhit() {
@@ -380,6 +387,7 @@ __attribute__((destructor)) void cleanup() {
 	switchBufs(1);
 	oldt.c_lflag |= ICANON | ECHO; // in case i fucked up someone's terminal
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) & ~O_NONBLOCK);
 	free(dir);
 	free(dirB4Enter);
 	freeJorked(dirStuff, dirStuffSz);
@@ -419,16 +427,16 @@ void renderDirPicker(int wd, int hi) {
 	int off = 0;
 	if (fileIdx!=0) off=(fileIdx/allowedCols)*allowedCols;
 	while (count<hi-reservedCols) {
-		if (count>0) puts("\x1b[0m");
+		if (count>0) printf("\n\x1b[0m");
 		if ((onlyDirsSz==0)&&(count==0)) printf("\x1b[3mmt"); // i print it before any |\x1b[7m|s
 		if (count+off==fileIdx) printf("\x1b[7m");
-		if (count+off<onlyDirsSz) printf("%s",onlyDirs[count+off]);
+		if (count+off<onlyDirsSz) printf("%-*s",wd,onlyDirs[count+off]);
 		count++;
 	}
 	puts("\x1b[0m");
 	if (canTip) printf("%s\n", tip); // we have enough space for tips!
 	c*selected = "";
-	if (fileIdx<onlyDirsSz) selected = onlyDirs[fileIdx];
+	if (onlyDirsSz>0) selected = onlyDirs[fileIdx];
 	printf("\x1b[7m%s%s%s\x1b[0m", dir, ((*selected!=0)&&(dir[1]!=0))?"/":"", selected);
 }
 
@@ -441,6 +449,7 @@ void setupDirCnsts() {
 }
 
 int main(int argc, char**argv) {
+	bool cwdValid = readYarg();
 	dirB4Enter = malloc(1); // 100% freeable
 	dir = getcwd(NULL, 0);
 	setupDirCnsts();
@@ -470,6 +479,7 @@ int main(int argc, char**argv) {
 			switch (renderM) {
 				case PICK:
 				case NONYARGWARN:
+					printf("\x1b]0;%s!\x1b\\", (renderM==NONYARGWARN)?"warning!!":"yargine");
 					c*pad;
 					c*nls = calloc(h/10+1, sizeof(c)); // +1 for null term
 					memset(nls, 10, h/10);
@@ -488,27 +498,41 @@ int main(int argc, char**argv) {
 						break;
 					}
 					printf("%s  ",nls);
-					if (true) printf("\x1b[1myou're not in a yargine project!\x1b[0m ");
+					if (!(cwdValid)) printf("\x1b[1myour cwd isn't a valid yargine project!\x1b[0m ");
 					printf("choose project:\n%s", nls);
 					renderDirPicker(w,h-((h/10)*4+2));
 					free(pad);
 					free(nls);
 					break;
 				case PROJSETUP:
-					printf("the folder you selected was eligible for a new yargine project or got fully wiped.\nplease take your time to set up your new project.\n\n\x1b[?25h");
+					printf("\x1b]0;yargine!\x1b\\");
+					printf("the folder you selected was eligible for a new yargine project or got fully wiped.\nplease take your time to set up your new project.\nnote: do press enter after pressing ^c. idk why. just do.\n\n\x1b[?25h");
 					newt.c_lflag |= ECHO;
 					tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+					canceled = 0;
 					c*pName = readline("project name: ");
+					FILE*log = fopen("mylog.txt", "a");
+					fprintf(log, "\n%d %d %d", !!pName, *pName, canceled); // just like printf
+					fclose(log);
+					needsRender = true;
 					newt.c_lflag &= ~ECHO;
 					tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 					printf("\x1b[?25l");
+					if ((canceled)||((!(pName))||(*pName==0))) {
+						running = 1;
+						free(dir);
+						dir = calloc(strlen(dirB4Enter)+1,sizeof(c));
+						strcpy(dir,dirB4Enter);
+						setupDirCnsts();
+						renderM = PICK;
+						break;
+					}
 					initYarg(pName);
 					renderM = PROJ;
-					needsRender = true;
 					break;
 				case PROJ:
 					pName = readYstr(thisProj.projName);
-					printf("\x1b]0;\"%s\" - yargine\x1b\\\x1b[3m%s\x1b[0m - yargine", pName, pName);
+					printf("\x1b]0;%s - yargine!\x1b\\\x1b[3m%s\x1b[0m - yargine!", pName, pName);
 					free(pName);
 					break;
 				default:
@@ -517,7 +541,7 @@ int main(int argc, char**argv) {
 			}
 			fflush(stdout);
 		}
-		if (_kbhit()) {
+		if ((_kbhit())&&(running)) {
 			int initCh = _getch();
 			if ((initCh>64)&&(initCh<91)) initCh+=32;
 			if (isalpha(initCh)) {
