@@ -1,6 +1,5 @@
-#! this does nothing for the parser
-... yargL
-... YARGin Language
+#!parser ignores this shebang
+... lyarg (lang + yarg)
 ... i'll comment out shit that doesn't parse for now
 
 yar mutableLocal =... + 1 2
