@@ -8,18 +8,19 @@ yargine is a huge work in progress game engine built in pure c, using binaryen, 
 for now, most compatability goes on unix-like systems, however, windows (and maybe macos) compatability is in the works.
 
 requirements:
-	- readline (should be preinstalled on modern distros)
-	- [binaryen](https://github.com/WebAssembly/binaryen/releases/)
-	- jorkdir (submodule)
-	- cwalk (submodule)
+
+- readline (should be preinstalled on modern distros)
+- [binaryen](https://github.com/WebAssembly/binaryen/releases/)
+- jorkdir (submodule)
+- cwalk (submodule)
 
 before building, run `git submodule update` just in case
 
 for linux, just run `./build` and it'll automatically build for you and launch yargine!
 
 # roadmap?
-	- base project render screen
-	- yargL
-	- wasm export (with binaryen)
-	- [castle](https://castle.xyz) export
-	- native linux/windows export (with sdl?)
+- base project render screen
+- yargL
+- wasm export (with binaryen)
+- [castle](https://castle.xyz) export
+- native linux/windows export (with sdl?)
