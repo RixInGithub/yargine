@@ -1,3 +1,7 @@
 [submodule "jorkdir"]
 	path = jorkdir
 	url = https://github.com/RixInGithub/jorkdir.git
+[submodule "cwalk"]
+	path = cwalk
+	url = https://github.com/likle/cwalk.git
+	branch = stable

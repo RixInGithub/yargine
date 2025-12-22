@@ -10,12 +10,16 @@ for now, most compatability goes on unix-like systems, however, windows (and may
 requirements:
 	- readline (should be preinstalled on modern distros)
 	- [binaryen](https://github.com/WebAssembly/binaryen/releases/)
+	- jorkdir (submodule)
+	- cwalk (submodule)
+
+before building, run `git submodule update` just in case
 
 for linux, just run `./build` and it'll automatically build for you and launch yargine!
 
 # roadmap?
 	- base project render screen
 	- yargL
-	- yargine projects on the web/wasm (with binaryen)
-	- yargine projects on [castle](https://castle.xyz)
-	- yargine projects on native linux/windows (with sdl?)
+	- wasm export (with binaryen)
+	- [castle](https://castle.xyz) export
+	- native linux/windows export (with sdl?)

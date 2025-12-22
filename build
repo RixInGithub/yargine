@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -eo pipefail
-gcc main.c jorkdir/jorkdir.c -lbinaryen -lreadline -o yargine.x86_64 -O3
+gcc main.c jorkdir/jorkdir.c cwalk/src/cwalk.c -Icwalk/include -lbinaryen -lreadline -o yargine.x86_64 -O3
 ./yargine.x86_64

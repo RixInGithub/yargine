@@ -15,6 +15,7 @@
 #include "binaryen-c.h"
 #include "readline/readline.h"
 #include "readline/history.h"
+#include "cwalk.h" // diabolical
 
 #define _getch getchar
 #define YSMAJOR 0 // this should only be changed when the structure's data types are swapped around.
@@ -26,9 +27,6 @@ typedef enum {
 	PROJ
 } RenderMode;
 
-// strings file => "ystr.bin"
-// base project => "yarg.bin"
-
 typedef char c;
 typedef uint32_t ystrIdx; // 1-based. 0 = blank
 typedef c yHdr[4];
@@ -37,6 +35,7 @@ typedef struct {
 	yHdr hdr;
 	uint8_t majorVer;
 	ystrIdx projName;
+	ystrIdx main;
 } yarg;
 #pragma pack(pop)
 volatile sig_atomic_t running = 1;
@@ -48,22 +47,77 @@ int fileIdx;
 int dirStuffSz;
 bool needsRender;
 struct termios oldt;
+struct termios newt;
 c*err = "";
 c*dir;
 c*dirB4Enter;
+c*rlFill;
 c**dirStuff;
 c**onlyDirs;
 int onlyDirsSz = 0;
 RenderMode renderM;
 yarg thisProj;
 
+// strings file => "ystr.bin"
+// base project => "yarg.bin"
+
 int __readline__startupHook() {
-	rl_insert_text(strrchr(dir,47)+1);
+	rl_insert_text(rlFill);
 	rl_mark = 0;
 	return 0;
 }
 
-bool initYarg(c*name) {
+void afterRl() {
+	newt.c_lflag &= ~ECHO;
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+	printf("\x1b[?25l");
+}
+
+bool isDir(c*p) {
+	struct stat st;
+	return ((lstat(p, &st) == 0) && (S_ISDIR(st.st_mode)));
+}
+
+c**filterOnlyDirs(c**jorked, int*sz) {
+	c**res = NULL;
+	int count = 0;
+	int inpSize = *sz;
+	int resSize = 0;
+	c full[PATH_MAX] = {0};
+	while (count<inpSize) {
+		c*unfinished = jorked[count];
+		snprintf(full, sizeof(full), "%s/%s", dir, unfinished);
+		if ((isDir(full))&&(strcmp(unfinished,".."))) {
+			int idx = resSize++;
+			res = realloc(res, resSize*sizeof(c*));
+			res[idx] = malloc(strlen(unfinished) + 1);
+			strcpy(res[idx], unfinished);
+		}
+		count++;
+	}
+	*sz = resSize;
+	return res;
+}
+
+void setupDirCnsts() {
+	renderM = PICK;
+	fileIdx = 0;
+	dirStuff = jorkdir(dir, &dirStuffSz);
+	onlyDirsSz = dirStuffSz;
+	onlyDirs = filterOnlyDirs(dirStuff, &onlyDirsSz);
+}
+
+void onRlExit() {
+	afterRl();
+	running = 1;
+	free(dir);
+	dir = calloc(strlen(dirB4Enter)+1,sizeof(c));
+	strcpy(dir,dirB4Enter);
+	setupDirCnsts();
+	renderM = PICK;
+}
+
+bool initYarg(c*name, c*main) {
 	c full[PATH_MAX] = {0};
 	snprintf(full, sizeof(full), "%s/%s", dir, "yarg.bin");
 	FILE*ygFile = fopen(full,"wb");
@@ -72,6 +126,7 @@ bool initYarg(c*name) {
 	strncpy(thisProj.hdr, "YARG", 4);
 	thisProj.majorVer = YSMAJOR;
 	thisProj.projName = 1;
+	thisProj.main = 2;
 	// TODO: more fields
 	if (fwrite(&thisProj,sizeof(thisProj),1,ygFile)!=1) {
 		fclose(ygFile);
@@ -91,12 +146,23 @@ bool initYarg(c*name) {
 	FILE*yrFile = fopen(full,"wb");
 	if (!(yrFile)) return false;
 	fwrite("YSTR", 1, 4, yrFile);
-	uint32_t nameLen = (uint32_t)strlen(name);
-	if (fwrite(&nameLen,sizeof(uint32_t),1,yrFile)!=1) {
+	uint32_t len = (uint32_t)strlen(name);
+	if (fwrite(&len,sizeof(uint32_t),1,yrFile)!=1) {
 		fclose(yrFile);
 		return false;
 	}
-	if (fwrite(name, 1, nameLen, yrFile) != nameLen) {
+	if (fwrite(name, 1, len, yrFile) != len) {
+		fclose(yrFile);
+		return false;
+	}
+	memset(full,0,sizeof(full));
+	snprintf(full, sizeof(full), "%s/%s", dir, main);
+	len = (uint32_t)strlen(full);
+	if (fwrite(&len,sizeof(uint32_t),1,yrFile)!=1) {
+		fclose(yrFile);
+		return false;
+	}
+	if (fwrite(full, 1, len, yrFile) != len) {
 		fclose(yrFile);
 		return false;
 	}
@@ -302,11 +368,6 @@ bool modifyYstr(ystrIdx idx, c*new) {
 	return true; // thank for watching like and subcrib
 }
 
-bool isDir(c*p) {
-	struct stat st;
-	return ((lstat(p, &st) == 0) && (S_ISDIR(st.st_mode)));
-}
-
 void freeJorked(c**jorked, int sz) {
 	int count = 0;
 	while (count<sz) free(jorked[count++]); // increments count, gets jorked[prevCount] and frees it. simple!
@@ -396,27 +457,6 @@ __attribute__((destructor)) void cleanup() {
 	printf("\x1b[31;1m%s\x1b[0m\n",err);
 }
 
-c**filterOnlyDirs(c**jorked, int*sz) {
-	c**res = NULL;
-	int count = 0;
-	int inpSize = *sz;
-	int resSize = 0;
-	c full[PATH_MAX] = {0};
-	while (count<inpSize) {
-		c*unfinished = jorked[count];
-		snprintf(full, sizeof(full), "%s/%s", dir, unfinished);
-		if ((isDir(full))&&(strcmp(unfinished,".."))) {
-			int idx = resSize++;
-			res = realloc(res, resSize*sizeof(c*));
-			res[idx] = malloc(strlen(unfinished) + 1);
-			strcpy(res[idx], unfinished);
-		}
-		count++;
-	}
-	*sz = resSize;
-	return res;
-}
-
 void renderDirPicker(int wd, int hi) {
 	size_t count = 0;
 	c full[PATH_MAX] = {0};
@@ -440,20 +480,11 @@ void renderDirPicker(int wd, int hi) {
 	printf("\x1b[7m%s%s%s\x1b[0m", dir, ((*selected!=0)&&(dir[1]!=0))?"/":"", selected);
 }
 
-void setupDirCnsts() {
-	renderM = PICK;
-	fileIdx = 0;
-	dirStuff = jorkdir(dir, &dirStuffSz);
-	onlyDirsSz = dirStuffSz;
-	onlyDirs = filterOnlyDirs(dirStuff, &onlyDirsSz);
-}
-
 int main(int argc, char**argv) {
 	bool cwdValid = readYarg();
 	dirB4Enter = malloc(1); // 100% freeable
 	dir = getcwd(NULL, 0);
 	setupDirCnsts();
-	struct termios newt;
 	tcgetattr(STDIN_FILENO, &oldt);
 	newt = oldt;
 	newt.c_lflag &= ~(ICANON | ECHO);
@@ -507,27 +538,23 @@ int main(int argc, char**argv) {
 				case PROJSETUP:
 					printf("\x1b]0;yargine!\x1b\\");
 					printf("the folder you selected was eligible for a new yargine project or got fully wiped.\nplease take your time to set up your new project.\nnote: do press enter after pressing ^c. idk why. just do.\n\n\x1b[?25h");
+					needsRender = true;
 					newt.c_lflag |= ECHO;
 					tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 					canceled = 0;
+					rlFill = strrchr(dir,47)+1;
 					c*pName = readline("project name: ");
-					FILE*log = fopen("mylog.txt", "a");
-					fprintf(log, "\n%d %d %d", !!pName, *pName, canceled); // just like printf
-					fclose(log);
-					needsRender = true;
-					newt.c_lflag &= ~ECHO;
-					tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-					printf("\x1b[?25l");
 					if ((canceled)||((!(pName))||(*pName==0))) {
-						running = 1;
-						free(dir);
-						dir = calloc(strlen(dirB4Enter)+1,sizeof(c));
-						strcpy(dir,dirB4Enter);
-						setupDirCnsts();
-						renderM = PICK;
+						onRlExit();
 						break;
 					}
-					initYarg(pName);
+					rlFill = "";
+					c*main = readline("main file: ");
+					if ((canceled)||((!(main))||(*main==0))) {
+						onRlExit();
+						break;
+					}
+					initYarg(pName, main);
 					renderM = PROJ;
 					break;
 				case PROJ:

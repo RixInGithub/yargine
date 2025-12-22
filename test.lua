@@ -51,13 +51,18 @@ while #inp~=0 do
 	if inp:sub(1,4)=="yarg" or inp:sub(1,3)=="yar" then
 		local isConst = inp:sub(1,4)=="yarg"
 		local varTbl = isConst and yargTbl or yarTbl
+		local otrTbl = isConst and yarTbl or yargTbl
 		skipTkn = 4+(isConst and 1 or 0)
 		inp = inp:sub(skipTkn)
 		slurpWS()
 		id = slurpUntilWS("id")
-		for _,a in ipairs(yargTbl) do
+		for _,a in ipairs(otrTbl) do
 			if a==id then
-				error(string.format("ye folk haveth heard the yar of %s, so ye can't make a yarg for the same thing", a))
+				-- a => yar/yarg
+				-- id => yarg/yar
+				-- isConst => id => yarg, a => yar
+				-- not isConst => id => yar, a => yarg
+				error(string.format("can't yar%s a yar%s'd yariable", isConst and "g" or "", isConst and "" or "g"))
 			end
 		end
 		slurpWS() -- yup, even before |:|. see, i told you it's optional! (incoming pun on the C reimplementation hehe)
@@ -65,6 +70,8 @@ while #inp~=0 do
 			error(string.format("ye folk expected a symbol to yar%s", isConst and "g" or ""))
 		end
 		inp = inp:sub(2)
+		print("got variable", id)
+		table.insert(varTbl,id)
 		-- expressions tomorrow
 	end
 end

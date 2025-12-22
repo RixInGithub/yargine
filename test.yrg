@@ -4,7 +4,7 @@
 ... i'll comment out shit that doesn't parse for now
 
 yar mutableLocal =... + 1 2
-...yarg immutableGlobal = * 4 2 ... shut up yargine
+yarg immutableGlobal =... * 4 2 ... shut up yargine
 ...yarg zero: Int ... shut up yargine
 ... the comment above is the official way to silence any |yarg| warns.
 
