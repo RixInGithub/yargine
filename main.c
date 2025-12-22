@@ -1,7 +1,8 @@
 #include "base.h"
 #include "ystr.h"
+#include "picker.h"
 
-#include "jorkdir/jorkdir.h"
+#include "jorkdir.h"
 #include "binaryen-c.h"
 #include "readline/readline.h"
 #include "readline/history.h"
@@ -33,9 +34,24 @@ c**dirStuff;
 c**onlyDirs;
 int onlyDirsSz = 0;
 RenderMode renderM;
+bool cwdValid;
 
 // strings file => "ystr.bin"
 // base project => "yarg.bin"
+
+void winch(int _) {
+	resized = 1;
+}
+
+void exitHand(int _) {
+	running=0;
+	canceled = 1;
+	rl_replace_line("", 0);
+	rl_point = 0;
+	rl_done = 1;
+	rl_pending_input = 10;
+	ssize_t satisfaction = write(1, "\n", 1); // shut up c
+}
 
 int __readline__startupHook() {
 	rl_insert_text(rlFill);
@@ -47,11 +63,6 @@ void afterRl() {
 	newt.c_lflag &= ~ECHO;
 	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 	printf("\x1b[?25l");
-}
-
-bool isDir(c*p) {
-	struct stat st;
-	return ((lstat(p, &st) == 0) && (S_ISDIR(st.st_mode)));
 }
 
 c**filterOnlyDirs(c**jorked, int*sz) {
@@ -93,39 +104,6 @@ void onRlExit() {
 	renderM = PICK;
 }
 
-void freeJorked(c**jorked, int sz) {
-	int count = 0;
-	while (count<sz) free(jorked[count++]); // increments count, gets jorked[prevCount] and frees it. simple!
-	free(jorked);
-}
-
-void wipeDir(c*dr) {
-	int jorkedSz;
-	c**jorked = jorkdir(dr,&jorkedSz);
-	memset(full,0,sizeof(full));
-	int count = 0;
-	while (count<jorkedSz) {
-		c*unfinished = jorked[count];
-		if (strcmp(unfinished,"..")) {
-			snprintf(full, sizeof(full), "%s/%s", dr, unfinished);
-			switch ((int)isDir(full)) {
-				case 1:
-					wipeDir(full);
-					rmdir(full);
-					break;
-				case 0:
-					unlink(full);
-					break;
-				default:
-					__builtin_unreachable();
-					break;
-			}
-		}
-		count++;
-	}
-	freeJorked(jorked, jorkedSz);
-}
-
 void getTermSize() {
 	if (!(resized)) return;
 	resized = 0;
@@ -133,20 +111,6 @@ void getTermSize() {
 	if(ioctl(STDOUT_FILENO,TIOCGWINSZ,&ws)==-1){w=0;h=0;return;}
 	w=ws.ws_col;
 	h=ws.ws_row;
-}
-
-void winch(int _) {
-	resized = 1;
-}
-
-void exitHand(int _) {
-	running=0;
-	canceled = 1;
-	rl_replace_line("", 0);
-	rl_point = 0;
-	rl_done = 1;
-	rl_pending_input = 10;
-	ssize_t satisfaction = write(1, "\n", 1); // shut up c
 }
 
 bool _kbhit() {
@@ -182,31 +146,8 @@ __attribute__((destructor)) void cleanup() {
 	printf("\x1b[31;1m%s\x1b[0m\n",err);
 }
 
-void renderDirPicker(int wd, int hi) {
-	size_t count = 0;
-	memset(full,0,sizeof(full));
-	c tip[] = "use UP/DOWN 2 navigate, LEFT 2 .., RIGHT to enter, ENTER to submit.";
-	bool canTip = wd>=(sizeof(tip)+1);
-	int reservedCols = 1+canTip;
-	int allowedCols = hi-reservedCols;
-	int off = 0;
-	if (fileIdx!=0) off=(fileIdx/allowedCols)*allowedCols;
-	while (count<hi-reservedCols) {
-		if (count>0) printf("\n\x1b[0m");
-		if ((onlyDirsSz==0)&&(count==0)) printf("\x1b[3mmt"); // i print it before any |\x1b[7m|s
-		if (count+off==fileIdx) printf("\x1b[7m");
-		if (count+off<onlyDirsSz) printf("%-*s",wd,onlyDirs[count+off]);
-		count++;
-	}
-	puts("\x1b[0m");
-	if (canTip) printf("%s\n", tip); // we have enough space for tips!
-	c*selected = "";
-	if (onlyDirsSz>0) selected = onlyDirs[fileIdx];
-	printf("\x1b[7m%s%s%s\x1b[0m", dir, ((*selected!=0)&&(dir[1]!=0))?"/":"", selected);
-}
-
 int main(int argc, char**argv) {
-	bool cwdValid = readYarg();
+	cwdValid = readYarg();
 	dirB4Enter = malloc(1); // 100% freeable
 	dir = getcwd(NULL, 0);
 	setupDirCnsts();
@@ -235,30 +176,7 @@ int main(int argc, char**argv) {
 			switch (renderM) {
 				case PICK:
 				case NONYARGWARN:
-					printf("\x1b]0;%s!\x1b\\", (renderM==NONYARGWARN)?"warning!!":"yargine");
-					c*pad;
-					c*nls = calloc(h/10+1, sizeof(c)); // +1 for null term
-					memset(nls, 10, h/10);
-					c*name = "y \x20  a \x20  r \x20  g \x20  i \x20  n \x20  e \x20  !";
-					// if (w<44) name = "yargine!";
-					if (renderM==NONYARGWARN) name = "warning!!!";
-					size_t nameLen = strlen(name);
-					size_t padLen = w>nameLen ? (w-strlen(name))/2 : 0;
-					pad = calloc(padLen, sizeof(c));
-					memset(pad, 32, padLen);
-					printf("%s%s\x1b[3%d;1m%s\x1b[0m\n%s", nls, pad, 1+((renderM!=NONYARGWARN)*4), name, nls);
-					if (renderM==NONYARGWARN) {
-						printf("the folder you selected was detected not a yargine project (or a yargine project for an older/newer version of yargine.)\n");
-						printf("please select an action using the highlighted letters, then press enter.\n\n");
-						printf("\x1b[7mw\x1b[0mipe contents\n\x1b[7mc\x1b[0mancel");
-						break;
-					}
-					printf("%s  ",nls);
-					if (!(cwdValid)) printf("\x1b[1myour cwd isn't a valid yargine project!\x1b[0m ");
-					printf("choose project:\n%s", nls);
-					renderDirPicker(w,h-((h/10)*4+2));
-					free(pad);
-					free(nls);
+					renderPicker(renderM==PICK);
 					break;
 				case PROJSETUP:
 					printf("\x1b]0;yargine!\x1b\\");
@@ -378,15 +296,7 @@ int main(int argc, char**argv) {
 					dir=steppingStone;
 					needsRender = true;
 					bool yargValid = readYarg();
-					/*
-						snprintf(full, sizeof(full), "%s/%s", dir, "yarg.bin");
-						FILE*fChk1 = fopen(full,"r");
-						snprintf(full, sizeof(full), "%s/%s", dir, "ystr.bin");
-						FILE*fChk2 = fopen(full,"r");
-						bool filesExist = (fChk1)&&(fChk2);
-						if (fChk1) fclose(fChk1);
-						if (fChk2) fclose(fChk2);
-					*/
+					// there was a massive section of code to check if yarg.bin + ystr.bin for a single bool on here, but i decided to snip it off for the lines.
 					// day 2 of saving overhead every day™ (trust)
 					int isNonEmpty = 0;
 					c**jorked = jorkdir(dir, &isNonEmpty);

@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -eo pipefail
-gcc main.c jorkdir/jorkdir.c cwalk/src/*.c more/*.c -Icwalk/include -Imore -lbinaryen -lreadline -o yargine.x86_64 -O3
-./yargine.x86_64
+gcc main.c jorkdir/*.c cwalk/src/*.c more/*.c -Icwalk/include -Imore -Ijorkdir -lbinaryen -lreadline -o yargine.x86_64 -O3
+[ -z "$1" ] && ./yargine.x86_64

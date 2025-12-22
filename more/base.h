@@ -1,16 +1,16 @@
 #ifndef BASE_H
 #define BASE_H
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <termios.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <limits.h>
+#include <stdlib.h> // might
+#include <string.h> // as
+#include <stdio.h> // well
+#include <stdbool.h> // need
+#include <termios.h> // to
+#include <fcntl.h> // include
+#include <unistd.h> // every
+#include <signal.h> // builtin
+#include <sys/ioctl.h> // lib
+#include <sys/stat.h> // that
+#include <limits.h> // exists...
 #include <errno.h>
 #include <ctype.h>
 #include <stdint.h>
@@ -19,4 +19,14 @@ typedef char c;
 extern c full[PATH_MAX];
 extern c real[PATH_MAX];
 extern c*dir;
+extern int fileIdx;
+extern int onlyDirsSz;
+extern int w;
+extern int h;
+extern c**onlyDirs;
+extern bool cwdValid;
+
+bool isDir(c*);
+void freeJorked(c**, int);
+void wipeDir(c*);
 #endif
