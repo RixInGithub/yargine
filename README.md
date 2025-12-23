@@ -20,7 +20,7 @@ for linux, just run `./build` and it'll automatically build for you and launch y
 
 # roadmap?
 - base project render screen
-- yargL
+- lyarg
 - wasm export (with binaryen)
 - [castle](https://castle.xyz) export
 - native linux/windows export (with sdl?)

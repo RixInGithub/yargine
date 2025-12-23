@@ -3,7 +3,7 @@
 -- in lyarg, whitespace is optional unless there's no other way around it.
 -- btw _ is whitespace cuz its barely blank (cry about it)
 -- so instead of |+ 1 1| you can do |+_1_1| (fuck them snake case ppl)
-inpIO = io.open("test.yrg")
+inpIO = io.open(arg[1]or"./main.yrg")
 inp = inpIO:read("*a")
 inpIO:close()
 local __inp = inp:sub(1) -- copy of inp
@@ -11,10 +11,10 @@ local ops = "+-*/" -- c*... nomz..
 
 function expressionParse()
 	local out = ""
-	if string.find(ops,__inp:sub(1,1))~=nil then
+	if string.find(ops,__inp:sub(1,1),1,true)~=nil then
 		if not isWS(__inp:sub(2,2)) then error("expected whitespace") end
 		__inp=__inp:sub(3) -- day 5 of saving overhead every day™ (trust)
-		slurpWS(inp)
+		slurpWS()
 
 		return
 	end
@@ -22,20 +22,21 @@ function expressionParse()
 end
 
 function isWS(c)
-	return string.find("\x20\t\r\n_",c)~=nil -- accurate c translation of doing this: |strrchar("...",c)!=NULL|
+	if #c~=1 then return false end
+	return string.find("\x20\t\r\n_",c,1,true)~=nil -- accurate c translation of doing this: |strrchar("...",c)!=NULL|
 end
 
 function slurpUntilWS(rule)
 	local out = ""
-	while not isWS(__inp:sub(1,1)) do
+	while (not isWS(__inp:sub(1,1))) and #__inp>0 do
 		ch = __inp:sub(1,1)
-		if rule == "id" and string.find("%a@#$",ch)==nil then -- sadly i'll have to expand the %l to the whole alphabet ig
+		if rule == "id" and ch:find("[%a@#$]")==nil then
 			error("ye folk expected an identifier without a foul character in the name")
 		end
 		out = out .. ch -- if only it was that simple in c...
 		__inp = __inp:sub(2) -- stare at this instead, this is easy in c. it's just |__inp++;|. look at it, the beauty hides within.
 	end
-	if rule=="id" and out=="yar" or out=="yarg" or out=="f" then error("ye folk know the name from the legend of the keywords, is it really them? the keyword gods?") end -- populate with more keywords
+	if rule=="id" and (out=="yar" or out=="yarg" or out=="f") then error("ye folk know the name from the legend of the keywords, is it really them? the keyword gods?") end -- populate with more keywords
 	-- if rule=="id" and out == "_specialStackStart" then out = "_"..out end -- actually go shit yourselves
 	-- anyways day 4 of saving overhead every day™ (trust)
 	return out
@@ -46,7 +47,17 @@ function slurpWS()
 end
 
 function slurpComment()
-	__inp = __inp:sub(__inp:find("\n")+1) -- expand to \r too in c reimplementation
+	local firstNl = __inp:find("\n")
+	local firstCr = __inp:find("\r")
+	print(firstNl,firstCr)
+	if firstNl==nil and firstCr==nil then return (function()__inp=""end)() end -- way to get around assignment not being an expression
+	local won = -1
+	if firstNl == nil then won = firstCr end
+	if firstCr == nil then won = firstNl end
+	if won==-1 then -- neither are nil, epique
+		won = math.min(firstNl, firstCr) -- this'll be a macro in c.
+	end
+	__inp = __inp:sub(won+1)
 	slurpWS()
 end
 
@@ -56,8 +67,7 @@ local yarTbl = {}
 local fTbl = {}
 parsed = {}
 if __inp:sub(1,2) == "#!" then slurpComment() end -- shebang (why not)
-while #__inp~=0 do
-	slurpWS()
+while #__inp>0 do
 	while __inp:sub(1,3) == "..." do -- day 3 of saving overhead every day™ (trust)
 		slurpComment()
 	end
@@ -80,12 +90,12 @@ while #__inp~=0 do
 			end
 		end
 		slurpWS() -- yup, even before |:|. see, i told you it's optional! (incoming pun on the C reimplementation hehe)
-		if string.find(":=",__inp:sub(1,1))==nil then
+		if string.find(":=",__inp:sub(1,1),1,true)==nil then
 			error(string.format("ye folk expected a symbol to yar%s", isConst and "g" or ""))
 		end
 		__inp = __inp:sub(2)
 		print("got variable", id)
 		table.insert(varTbl,id)
-		-- expressions tomorrow
+		-- expressions only when i decide the c tui's good enough
 	end
 end

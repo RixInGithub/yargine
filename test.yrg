@@ -1,4 +1,4 @@
-#!parser ignores this shebang
+#!./lyarg.lua
 ... lyarg (lang + yarg)
 ... i'll comment out shit that doesn't parse for now
 
@@ -10,3 +10,5 @@ yarg immutableGlobal =... * 4 2 ... shut up yargine
 ...f someFunction(input) { ... zero typing on functions
 ...	return * input 2
 ...}
+
+... COMMENT FOLLOWED BY EOF HOW
