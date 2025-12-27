@@ -62,7 +62,9 @@ bool initYarg(c*name, c*main) {
 		return false;
 	}
 	fclose(yrFile);
-	FILE*fChk = fopen(real, "wb");
+	memset(full,0,sizeof(full));
+	snprintf(full, sizeof(full), "%s/%s", dir, real);
+	FILE*fChk = fopen(full, "wb");
 	if (fChk) {
 		fwrite(template_yrg, 1, template_yrg_len, fChk);
 		fclose(fChk);
