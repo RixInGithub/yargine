@@ -2,12 +2,6 @@
 #include "ystr.h"
 #include "picker.h"
 
-#include "jorkdir.h"
-#include "binaryen-c.h"
-#include "readline/readline.h"
-#include "readline/history.h"
-#include "cwalk.h" // diabolical
-
 #define _getch getchar
 
 typedef enum {
@@ -28,6 +22,7 @@ bool needsRender;
 struct termios oldt;
 struct termios newt;
 c*err = "";
+c*dir;
 c*dirB4Enter;
 c*rlFill;
 c**dirStuff;

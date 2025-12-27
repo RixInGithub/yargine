@@ -1,4 +1,4 @@
-#!./lyarg.lua
+#!/usr/bin/env -S lua lyarg.lua
 ... lyarg (lang + yarg)
 ... i'll comment out shit that doesn't parse for now
 

@@ -3,7 +3,6 @@
 
 c full[PATH_MAX] = {0};
 c real[PATH_MAX] = {0};
-c*dir;
 
 bool isDir(c*p) {
 	struct stat st;

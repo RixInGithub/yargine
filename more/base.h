@@ -15,6 +15,12 @@
 #include <ctype.h>
 #include <stdint.h>
 
+#include "jorkdir.h"
+#include "binaryen-c.h"
+#include "readline/readline.h"
+#include "readline/history.h"
+#include "cwalk.h" // diabolical
+
 typedef char c;
 extern c full[PATH_MAX];
 extern c real[PATH_MAX];
@@ -25,6 +31,7 @@ extern int w;
 extern int h;
 extern c**onlyDirs;
 extern bool cwdValid;
+extern c*err;
 
 bool isDir(c*);
 void freeJorked(c**, int);

@@ -25,7 +25,7 @@ void renderDirPicker(int wd, int hi) {
 }
 
 void renderPicker(bool isPick) {
-	printf("\x1b]0;%s!\x1b\\", (isPick)?"yargine":"warning!!");
+	printf("\x1b]0;%s!\x1b\\", isPick?"yargine":"warning!!");
 	c*pad;
 	c*nls = calloc(h/10+1, sizeof(c)); // +1 for null term
 	memset(nls, 10, h/10);

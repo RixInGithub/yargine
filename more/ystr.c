@@ -1,5 +1,6 @@
 #include "ystr.h"
 #include "base.h"
+#include "template.h"
 yarg thisProj;
 
 bool initYarg(c*name, c*main) {
@@ -41,17 +42,31 @@ bool initYarg(c*name, c*main) {
 		return false;
 	}
 	memset(full,0,sizeof(full));
-	snprintf(full, sizeof(full), "%s/%s", dir, main);
-	len = (uint32_t)strlen(full);
+	memset(real,0,sizeof(real));
+	switch (*main) {
+		case 47:
+			cwk_path_get_relative(dir, main, real, sizeof(real));
+			break;
+		default:
+			strcpy(real, main);
+			break;
+	}
+	// allat to keep the anti else chain goin, worth it?
+	len = (uint32_t)strlen(real);
 	if (fwrite(&len,sizeof(uint32_t),1,yrFile)!=1) {
 		fclose(yrFile);
 		return false;
 	}
-	if (fwrite(full, 1, len, yrFile) != len) {
+	if (fwrite(real, 1, len, yrFile) != len) {
 		fclose(yrFile);
 		return false;
 	}
 	fclose(yrFile);
+	FILE*fChk = fopen(real, "wb");
+	if (fChk) {
+		fwrite(template_yrg, 1, template_yrg_len, fChk);
+		fclose(fChk);
+	}
 	return true;
 }
 

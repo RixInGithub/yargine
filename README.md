@@ -14,9 +14,9 @@ requirements:
 - jorkdir (submodule)
 - cwalk (submodule)
 
-before building, run `git submodule update` just in case
+before building, run `git submodule update --init --recursive` just in case or smth idk
 
-for linux, just run `./build` and it'll automatically build for you and launch yargine!
+for linux, just run `./build` and it'll automatically build for you and launch yargine! (unless if you specify any arg)
 
 # roadmap?
 - base project render screen
