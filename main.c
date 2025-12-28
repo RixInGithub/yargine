@@ -142,7 +142,7 @@ __attribute__((destructor)) void cleanup() {
 	printf("\x1b[31;1m%s\x1b[0m\n",err);
 }
 
-int main(int argc, char**argv) {
+int main(int argc, c**argv) {
 	cwk_path_set_style(CWK_STYLE_UNIX); // i dont think im swallowing the windows pill anytime soon
 	cwdValid = readYarg();
 	dirB4Enter = malloc(1); // 100% freeable
