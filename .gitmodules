@@ -5,3 +5,6 @@
 	path = cwalk
 	url = https://github.com/likle/cwalk.git
 	branch = stable
+[submodule "libnanoid"]
+	path = libnanoid
+	url = https://github.com/lukateras/libnanoid

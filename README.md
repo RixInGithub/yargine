@@ -10,9 +10,10 @@ for now, most compatability goes on unix-like systems, however, windows (and may
 requirements:
 
 - readline (should be preinstalled on modern distros)
-- [binaryen](https://github.com/WebAssembly/binaryen/releases/)
 - jorkdir (submodule)
 - cwalk (submodule)
+
+planned usage: [binaryen](https://github.com/WebAssembly/binaryen/), [libnanoid](https://github.com/lukateras/libnanoid/)
 
 before building, run `git submodule update --init --recursive` just in case or smth idk
 

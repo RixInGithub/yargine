@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -eo pipefail
 xxd -i template.yrg > more/template.h
-gcc main.c jorkdir/*.c cwalk/src/*.c more/*.c -Icwalk/include -Imore -Ijorkdir -lbinaryen -lreadline -o yargine.x86_64 -O3
+# libnanoid: libnanoid/*.c -Ilibnanoid
+# binaryen: -lbinaryen
+gcc main.c jorkdir/*.c cwalk/src/*.c more/*.c -Icwalk/include -Imore -Ijorkdir -lreadline -o yargine.x86_64 -O3
 [ -z "$1" ] && ./yargine.x86_64
 rm more/template.h
