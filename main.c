@@ -2,7 +2,7 @@
 #include "ystr.h"
 #include "picker.h"
 
-#define _getch getchar
+#define _getch getchar // i should prob go shit myself
 
 typedef enum {
 	PICK,
@@ -142,6 +142,7 @@ __attribute__((destructor)) void cleanup() {
 }
 
 int main(int argc, char**argv) {
+	cwk_path_set_style(CWK_STYLE_UNIX); // i dont think im swallowing the windows pill anytime soon
 	cwdValid = readYarg();
 	dirB4Enter = malloc(1); // 100% freeable
 	dir = getcwd(NULL, 0);

@@ -16,28 +16,13 @@ void freeJorked(c**jorked, int sz) {
 }
 
 void wipeDir(c*dr) {
-	int jorkedSz;
-	c**jorked = jorkdir(dr,&jorkedSz);
-	memset(full,0,sizeof(full));
-	int count = 0;
-	while (count<jorkedSz) {
-		c*unfinished = jorked[count];
-		if (strcmp(unfinished,"..")) {
-			snprintf(full, sizeof(full), "%s/%s", dr, unfinished);
-			switch ((int)isDir(full)) {
-				case 1:
-					wipeDir(full);
-					rmdir(full);
-					break;
-				case 0:
-					unlink(full);
-					break;
-				default:
-					__builtin_unreachable();
-					break;
-			}
-		}
-		count++;
+	// fuck it the previous full wipe version was on prev commits
+	c**yargs=(c*[]){"yarg.bin","ystr.bin",NULL};
+	size_t cnt = 0;
+	while (yargs[cnt]!=NULL) {
+		memset(full,0,sizeof(full));
+		snprintf(full, sizeof(full), "%s/%s", dr, yargs[cnt]);
+		unlink(full);
+		cnt++;
 	}
-	freeJorked(jorked, jorkedSz);
 }

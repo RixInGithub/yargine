@@ -72,12 +72,13 @@ bool initYarg(c*name, c*main) {
 	return true;
 }
 
-bool readYarg() { // despite it's name, also checks ystr.bin now!
+bool readYarg() { // despite it's name, also checks ystr.bin + the main file now!
 	memset(full,0,sizeof(full));
 	snprintf(full, sizeof(full), "%s/%s", dir, "yarg.bin");
 	FILE*ygFile = fopen(full,"rb");
 	if (!(ygFile)) return false;
 	size_t amnt = fread(&thisProj, sizeof(thisProj), 1, ygFile);
+	if (strncmp(thisProj.hdr,"YARG",4)!=0) return false;
 	fclose(ygFile);
 	if (amnt!=1) return false;
 	yHdr ystrHdr;
@@ -89,8 +90,16 @@ bool readYarg() { // despite it's name, also checks ystr.bin now!
 		fclose(yrFile);
 		return false;
 	}
+	if (strncmp(ystrHdr,"YSTR",4)!=0) return false;
 	fclose(yrFile);
-	return ((strncmp(thisProj.hdr,"YARG",4)==0)&&(strncmp(ystrHdr,"YSTR",4)==0));
+	c*mainFile = readYstr(thisProj.main);
+	memset(full,0,sizeof(full));
+	snprintf(full, sizeof(full), "%s/%s", dir, mainFile);
+	free(mainFile);
+	FILE*fChk = fopen(full,"r");
+	if (!(fChk)) return false;
+	fclose(fChk);
+	return true;
 }
 
 c*readYstr(ystrIdx idx) {
