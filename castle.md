@@ -1,8 +1,8 @@
-== GENERAL ==
+# general
 note: every gql request needs `X-Auth-Token` from `~/.castle/config.json` + optionally `X-OS` (or `X-Platform`), `X-Scene-Creator-Version` + some headers to accept/post json.
 
 to parse json, use https://github.com/open-source-patterns/nanojsonc
-== NEW DECKS ==
+# new decks
 no create deck mutation was found, however you can use the `updateCardAndDeckV2` mutation to create the deck and the classic cli update to add to the card
 
 query:
@@ -15,7 +15,7 @@ vars:
 ```
 
 format with `deckId, cardId, deckId`
-== PALETTES ==
+# palettes
 i found this:
 ```js
             r4 = {'key': 'default', 'label': 'AAP-64-Castle', 'creator': 'AdigunPolack', 'isEnabled': true};
