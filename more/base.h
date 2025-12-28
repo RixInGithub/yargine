@@ -36,4 +36,5 @@ extern c*err;
 bool isDir(c*);
 void freeJorked(c**, int);
 void wipeDir(c*);
+void openFileWithGUI(c*);
 #endif

@@ -5,8 +5,7 @@ void renderPicker(int wd, int hi) {
 	size_t count = 0;
 	memset(full,0,sizeof(full));
 	c tip[] = "use UP/DOWN 2 navigate, LEFT 2 .., RIGHT to enter, ENTER to submit.";
-	bool canTip = ((wd==w)&&(w>=(sizeof(tip)+1)));
-	int reservedCols = 1+canTip;
+	int reservedCols = ((wd==w)&&(w>=(sizeof(tip)+1)))*2;
 	int allowedCols = hi-reservedCols;
 	int off = 0;
 	if (fileIdx!=0) off=(fileIdx/allowedCols)*allowedCols;
@@ -17,8 +16,9 @@ void renderPicker(int wd, int hi) {
 		if (count+off<dirStuffSz) printf("%-*s",wd,dirStuff[count+off]);
 		count++;
 	}
-	puts("\x1b[0m");
-	if (canTip) printf("%s\n", tip); // we have enough space for tips!
+	printf("\x1b[0m");
+	if (reservedCols==0) return;
+	printf("\n%s\n", tip);
 	c*selected = "";
 	if (dirStuffSz>0) selected = dirStuff[fileIdx];
 	printf("\x1b[7m%s%s%s\x1b[0m", dir, ((*selected!=0)&&(dir[1]!=0))?"/":"", selected);

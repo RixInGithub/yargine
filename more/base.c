@@ -26,3 +26,19 @@ void wipeDir(c*dr) {
 		cnt++;
 	}
 }
+
+void openFileWithGUI(c*f) {
+	// xdg-open $URL || gio open $URL || gvfs-open $URL || kde-open $URL || kde-open5 $URL
+	if (fork()>0) return;
+	c**a = (c*[]){NULL,f,NULL};
+	c**gio = (c*[]){"gio","open",f,NULL};
+	c**cmds = (c*[]){"xdg-open","gio","gvfs-open","kde-open","kde-open5",NULL};
+	size_t cnt = 0;
+	int satisfaction = fileno(freopen("/dev/null", "w", stdout))+fileno(freopen("/dev/null", "w", stderr)); // shit yourself [-Wunused-result]
+	while (cmds[cnt]!=NULL) {
+		a[0]=cmds[cnt];
+		execvp(cmds[cnt],(strcmp(cmds[cnt],"gio")==0)?gio:a); // apparently only continues on failure
+		cnt++;
+	}
+	_exit(0); // meh, just in case...
+}

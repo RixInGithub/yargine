@@ -58,7 +58,7 @@ void afterRl() {
 	printf("\x1b[?25l");
 }
 
-c**filterOnlyDirs(c**jorked, int*sz) {
+c**filterJorked(c**jorked, int*sz, bool filesToo) { // only point is: yank away |..|
 	c**res = NULL;
 	int count = 0;
 	int inpSize = *sz;
@@ -67,7 +67,8 @@ c**filterOnlyDirs(c**jorked, int*sz) {
 	while (count<inpSize) {
 		c*unfinished = jorked[count];
 		snprintf(full, sizeof(full), "%s/%s", dir, unfinished);
-		if ((isDir(full))&&(strcmp(unfinished,".."))) {
+		bool can = filesToo?true:isDir(full);
+		if ((can)&&(strcmp(unfinished,".."))) {
 			int idx = resSize++;
 			res = realloc(res, resSize*sizeof(c*));
 			res[idx] = malloc(strlen(unfinished) + 1);
@@ -82,11 +83,11 @@ c**filterOnlyDirs(c**jorked, int*sz) {
 void setupDirCnsts() {
 	renderM = PICK;
 	fileIdx = 0;
-	int notOnlyDirSz;
-	c**notOnlyDir = jorkdir(dir, &notOnlyDirSz);
-	dirStuffSz = notOnlyDirSz;
-	dirStuff = filterOnlyDirs(notOnlyDir, &dirStuffSz);
-	freeJorked(notOnlyDir, notOnlyDirSz);
+	int unfitSz;
+	c**unfit = jorkdir(dir, &unfitSz);
+	dirStuffSz = unfitSz;
+	dirStuff = filterJorked(unfit, &dirStuffSz, false);
+	freeJorked(unfit, unfitSz);
 }
 
 void onRlExit() {
@@ -95,6 +96,7 @@ void onRlExit() {
 	free(dir);
 	dir = calloc(strlen(dirB4Enter)+1,sizeof(c));
 	strcpy(dir,dirB4Enter);
+	freeJorked(dirStuff, dirStuffSz);
 	setupDirCnsts();
 	renderM = PICK;
 }
@@ -196,9 +198,13 @@ int main(int argc, char**argv) {
 					renderM = PROJ;
 					break;
 				case PROJ:
+					c*philler = calloc(w,sizeof(c));
+					memset(philler,45,w);
 					pName = readYstr(thisProj.projName);
-					printf("\x1b]0;%s - yargine!\x1b\\\x1b[3m%s\x1b[0m - yargine!", pName, pName);
+					printf("\x1b]0;%s - yargine!\x1b\\\x1b[3m%s\x1b[0m - yargine!\n%s\n", pName, pName, philler);
 					free(pName);
+					free(philler);
+					renderPicker(w-(w/2),h-2);
 					break;
 				default:
 					err = "unknown render mode";
@@ -223,6 +229,7 @@ int main(int argc, char**argv) {
 							free(dir);
 							dir = calloc(strlen(dirB4Enter)+1,sizeof(c));
 							strcpy(dir,dirB4Enter);
+							freeJorked(dirStuff, dirStuffSz);
 							setupDirCnsts();
 							break;
 						}
@@ -237,6 +244,7 @@ int main(int argc, char**argv) {
 				case 27:
 					switch (renderM) {
 						case PICK:
+						case PROJ:
 							if (_getch()!=91) break;
 							int ch = _getch();
 							if ((ch<65)||(ch>68)) break;
@@ -259,6 +267,7 @@ int main(int argc, char**argv) {
 								strcpy(steppingStone, real);
 								free(dir);
 								dir=steppingStone;
+								freeJorked(dirStuff, dirStuffSz);
 								setupDirCnsts();
 								break;
 							}
@@ -273,7 +282,7 @@ int main(int argc, char**argv) {
 					break;
 				case 10:
 				case 13: // fuckass windows
-					if (renderM!=PICK) break; // TODO: swap to switch case like on |case 27:|
+					if ((renderM!=PICK)&&(renderM!=PROJ)) break;
 					dirB4Enter = calloc(strlen(dir)+1,sizeof(c));
 					strcpy(dirB4Enter,dir);
 					memset(full,0,sizeof(full));
@@ -287,6 +296,11 @@ int main(int argc, char**argv) {
 					}
 					c*steppingStone = calloc(sizeof(c), strlen(real)+1);
 					strcpy(steppingStone, real);
+					if (renderM==PROJ) {
+						openFileWithGUI(steppingStone);
+						free(steppingStone);
+						break;
+					}
 					free(dir);
 					dir=steppingStone;
 					needsRender = true;
@@ -297,6 +311,7 @@ int main(int argc, char**argv) {
 					c**jorked = jorkdir(dir, &isNonEmpty);
 					freeJorked(jorked, isNonEmpty); // instantaneously free the jorked
 					if (isNonEmpty>=1) isNonEmpty--; // exclude the |..| (there is no |.| in |jorkdir|)
+					fileIdx = 0;
 					if ((!(yargValid))&&(isNonEmpty)) {
 						renderM = NONYARGWARN;
 						break;
@@ -306,6 +321,12 @@ int main(int argc, char**argv) {
 						break;
 					}
 					if ((yargValid)&&(isNonEmpty)) { // explicitly check if non empty...
+						freeJorked(dirStuff, dirStuffSz);
+						int unfitSz;
+						c**unfit = jorkdir(dir, &unfitSz);
+						dirStuffSz = unfitSz;
+						dirStuff = filterJorked(unfit, &dirStuffSz, true);
+						freeJorked(unfit, unfitSz);
 						renderM = PROJ;
 						break;
 					}
