@@ -26,8 +26,6 @@ c*dir;
 c*dirB4Enter;
 c*rlFill;
 c**dirStuff;
-c**onlyDirs;
-int onlyDirsSz = 0;
 RenderMode renderM;
 bool cwdValid;
 
@@ -84,9 +82,11 @@ c**filterOnlyDirs(c**jorked, int*sz) {
 void setupDirCnsts() {
 	renderM = PICK;
 	fileIdx = 0;
-	dirStuff = jorkdir(dir, &dirStuffSz);
-	onlyDirsSz = dirStuffSz;
-	onlyDirs = filterOnlyDirs(dirStuff, &onlyDirsSz);
+	int notOnlyDirSz;
+	c**notOnlyDir = jorkdir(dir, &notOnlyDirSz);
+	dirStuffSz = notOnlyDirSz;
+	dirStuff = filterOnlyDirs(notOnlyDir, &dirStuffSz);
+	freeJorked(notOnlyDir, notOnlyDirSz);
 }
 
 void onRlExit() {
@@ -136,7 +136,6 @@ __attribute__((destructor)) void cleanup() {
 	free(dir);
 	free(dirB4Enter);
 	freeJorked(dirStuff, dirStuffSz);
-	freeJorked(onlyDirs, onlyDirsSz);
 	if (*err==0) return;
 	printf("\x1b[31;1m%s\x1b[0m\n",err);
 }
@@ -172,7 +171,7 @@ int main(int argc, char**argv) {
 			switch (renderM) {
 				case PICK:
 				case NONYARGWARN:
-					renderPicker(renderM==PICK);
+					renderRoot(renderM==PICK);
 					break;
 				case PROJSETUP:
 					printf("\x1b]0;yargine!\x1b\\");
@@ -248,8 +247,8 @@ int main(int argc, char**argv) {
 								c*toSn = "..";
 								if (ch==66+1) { // absolutely none of that 69 ripoff in my code
 									// this only executes user pressed right btw
-									if (onlyDirsSz==0) break; // only run the changing cmd when im not on an empty dir
-									toSn = onlyDirs[fileIdx];
+									if (dirStuffSz==0) break; // only run the changing cmd when im not on an empty dir
+									toSn = dirStuff[fileIdx];
 								}
 								snprintf(full, sizeof(full), "%s/%s", dir, toSn);
 								if (realpath(full,real)==NULL) {
@@ -263,11 +262,11 @@ int main(int argc, char**argv) {
 								setupDirCnsts();
 								break;
 							}
-							if (onlyDirsSz==0) break;
+							if (dirStuffSz==0) break;
 							ch = 2*ch-131;
 							fileIdx += ch;
-							while (fileIdx>=onlyDirsSz) fileIdx -= onlyDirsSz;
-							while (fileIdx<0) fileIdx += onlyDirsSz;
+							while (fileIdx>=dirStuffSz) fileIdx -= dirStuffSz;
+							while (fileIdx<0) fileIdx += dirStuffSz;
 							break;
 						default: break;
 					}
@@ -280,7 +279,7 @@ int main(int argc, char**argv) {
 					memset(full,0,sizeof(full));
 					memset(real,0,sizeof(real));
 					c*chosen = ".";
-					if (onlyDirsSz>0) chosen=onlyDirs[fileIdx];
+					if (dirStuffSz>0) chosen=dirStuff[fileIdx];
 					snprintf(full, sizeof(full), "%s/%s", dir, chosen);
 					if (realpath(full,real)==NULL) {
 						err = "realpath failed";

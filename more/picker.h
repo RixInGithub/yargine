@@ -1,5 +1,5 @@
 #ifndef PICKER_H
 #define PICKER_H
-void renderDirPicker(int, int);
-void renderPicker(bool);
+void renderPicker(int, int);
+void renderRoot(bool);
 #endif

@@ -1,30 +1,30 @@
 #include "base.h"
 #include "picker.h"
 
-void renderDirPicker(int wd, int hi) {
+void renderPicker(int wd, int hi) {
 	size_t count = 0;
 	memset(full,0,sizeof(full));
 	c tip[] = "use UP/DOWN 2 navigate, LEFT 2 .., RIGHT to enter, ENTER to submit.";
-	bool canTip = wd>=(sizeof(tip)+1);
+	bool canTip = ((wd==w)&&(w>=(sizeof(tip)+1)));
 	int reservedCols = 1+canTip;
 	int allowedCols = hi-reservedCols;
 	int off = 0;
 	if (fileIdx!=0) off=(fileIdx/allowedCols)*allowedCols;
 	while (count<hi-reservedCols) {
 		if (count>0) printf("\n\x1b[0m");
-		if ((onlyDirsSz==0)&&(count==0)) printf("\x1b[3mmt"); // i print it before any |\x1b[7m|s
+		if ((dirStuffSz==0)&&(count==0)) printf("\x1b[3mmt"); // i print it before any |\x1b[7m|s
 		if (count+off==fileIdx) printf("\x1b[7m");
-		if (count+off<onlyDirsSz) printf("%-*s",wd,onlyDirs[count+off]);
+		if (count+off<dirStuffSz) printf("%-*s",wd,dirStuff[count+off]);
 		count++;
 	}
 	puts("\x1b[0m");
 	if (canTip) printf("%s\n", tip); // we have enough space for tips!
 	c*selected = "";
-	if (onlyDirsSz>0) selected = onlyDirs[fileIdx];
+	if (dirStuffSz>0) selected = dirStuff[fileIdx];
 	printf("\x1b[7m%s%s%s\x1b[0m", dir, ((*selected!=0)&&(dir[1]!=0))?"/":"", selected);
 }
 
-void renderPicker(bool isPick) {
+void renderRoot(bool isPick) {
 	printf("\x1b]0;%s!\x1b\\", isPick?"yargine":"warning!!");
 	c*pad;
 	c*nls = calloc(h/10+1, sizeof(c)); // +1 for null term
@@ -45,7 +45,7 @@ void renderPicker(bool isPick) {
 	printf("%s  ",nls);
 	if (!(cwdValid)) printf("\x1b[1myour cwd isn't a valid yargine project!\x1b[0m ");
 	printf("choose project:\n%s", nls);
-	renderDirPicker(w,h-((h/10)*4+2));
+	renderPicker(w,h-((h/10)*4+2));
 	free(pad);
 	free(nls);
 }

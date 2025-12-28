@@ -26,10 +26,10 @@ extern c full[PATH_MAX];
 extern c real[PATH_MAX];
 extern c*dir;
 extern int fileIdx;
-extern int onlyDirsSz;
+extern int dirStuffSz;
 extern int w;
 extern int h;
-extern c**onlyDirs;
+extern c**dirStuff;
 extern bool cwdValid;
 extern c*err;
 

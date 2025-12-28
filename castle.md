@@ -31,3 +31,26 @@ query:
 {palettes{colors,isEnabled}}
 ```
 crunched up for efficiency
+# code scratching post for my brain
+to graphql, one most post the following json:
+```json
+{"query":...,"variables":...}
+```
+## new decks
+```
+deckId = nanoid(12)
+// check for collision by scene data?
+cardId = ... // =<12 chars i suppose
+{data} = post("https://api.castle.xyz/graphql", ..., {"X-Auth-Token": ..., "X-Platform": "yargine"})
+if (data.deck.deckId!=deckId) return
+if (data.card.cardId!=cardId) return
+// yay
+```
+## palettes
+```
+colors = ...
+{data} = post("https://api.castle.xyz/graphql", ..., {"X-Auth-Token": ..., "X-Platform": "yargine"})
+for (p in data) {
+	if (p.isEnabled) colors += p.colors
+}
+```
