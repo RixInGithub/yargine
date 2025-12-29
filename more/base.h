@@ -25,6 +25,7 @@ typedef char c;
 extern c full[PATH_MAX];
 extern c real[PATH_MAX];
 extern c*dir;
+extern c*projDir;
 extern int fileIdx;
 extern int dirStuffSz;
 extern int w;

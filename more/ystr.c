@@ -108,7 +108,7 @@ c*readYstr(ystrIdx idx) {
 	ystrIdx zeroBased = idx-1;
 	ystrIdx count = 0;
 	memset(full,0,sizeof(full));
-	snprintf(full, sizeof(full), "%s/%s", dir, "ystr.bin");
+	snprintf(full, sizeof(full), "%s/%s", projDir, "ystr.bin");
 	FILE*yrFile = fopen(full,"rb");
 	if (!(yrFile)) return NULL;
 	yHdr ystrHdr;
@@ -155,7 +155,7 @@ ystrIdx genYstr(c*new) {
 	// ystr indices always start from 1
 	ystrIdx count = 0;
 	memset(full,0,sizeof(full));
-	snprintf(full, sizeof(full), "%s/%s", dir, "ystr.bin");
+	snprintf(full, sizeof(full), "%s/%s", projDir, "ystr.bin");
 	FILE*yrFile = fopen(full,"rb");
 	if (!(yrFile)) return 0;
 	yHdr ystrHdr;
@@ -195,7 +195,7 @@ bool modifyYstr(ystrIdx idx, c*new) {
 	if (!(beforeIdx)) return false;
 	ystrIdx count = 0;
 	memset(full,0,sizeof(full));
-	snprintf(full, sizeof(full), "%s/%s", dir, "ystr.bin");
+	snprintf(full, sizeof(full), "%s/%s", projDir, "ystr.bin");
 	FILE*yrFile = fopen(full,"rb");
 	if (!(yrFile)) return false;
 	if (fread(beforeIdx, sizeof(yHdr), 1, yrFile)!=1) {

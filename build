@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# set -eo pipefail
+set -eo pipefail
 xxd -i template.yrg > more/template.h
 # libnanoid: libnanoid/*.c -Ilibnanoid
 # binaryen: -lbinaryen

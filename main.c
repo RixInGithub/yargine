@@ -28,6 +28,7 @@ c*rlFill;
 c**dirStuff;
 RenderMode renderM;
 bool cwdValid;
+c*projDir;
 
 // strings file => "ystr.bin"
 // base project => "yarg.bin"
@@ -58,7 +59,7 @@ void afterRl() {
 	printf("\x1b[?25l");
 }
 
-c**filterJorked(c**jorked, int*sz, bool filesToo) { // only point is: yank away |..|
+c**filterJorked(c**jorked, int*sz, bool filesToo, bool dotdot) { // only point is: yank away |..|
 	c**res = NULL;
 	int count = 0;
 	int inpSize = *sz;
@@ -68,7 +69,7 @@ c**filterJorked(c**jorked, int*sz, bool filesToo) { // only point is: yank away 
 		c*unfinished = jorked[count];
 		snprintf(full, sizeof(full), "%s/%s", dir, unfinished);
 		bool can = filesToo?true:isDir(full);
-		if ((can)&&(strcmp(unfinished,".."))) {
+		if ((can)&&((strcmp(unfinished,"..")==0)==dotdot)) { // xnor
 			int idx = resSize++;
 			res = realloc(res, resSize*sizeof(c*));
 			res[idx] = malloc(strlen(unfinished) + 1);
@@ -86,7 +87,16 @@ void setupDirCnsts() {
 	int unfitSz;
 	c**unfit = jorkdir(dir, &unfitSz);
 	dirStuffSz = unfitSz;
-	dirStuff = filterJorked(unfit, &dirStuffSz, false);
+	dirStuff = filterJorked(unfit, &dirStuffSz, false, false);
+	freeJorked(unfit, unfitSz);
+}
+
+void resetDirForPROJ() {
+	freeJorked(dirStuff, dirStuffSz);
+	int unfitSz;
+	c**unfit = jorkdir(dir, &unfitSz);
+	dirStuffSz = unfitSz;
+	dirStuff = filterJorked(unfit, &dirStuffSz, true, strcmp(projDir,dir)!=0);
 	freeJorked(unfit, unfitSz);
 }
 
@@ -146,6 +156,7 @@ int main(int argc, c**argv) {
 	cwk_path_set_style(CWK_STYLE_UNIX); // i dont think im swallowing the windows pill anytime soon
 	cwdValid = readYarg();
 	dirB4Enter = malloc(1); // 100% freeable
+	projDir = malloc(1);
 	dir = getcwd(NULL, 0);
 	setupDirCnsts();
 	tcgetattr(STDIN_FILENO, &oldt);
@@ -198,13 +209,13 @@ int main(int argc, c**argv) {
 					renderM = PROJ;
 					break;
 				case PROJ:
-					c*philler = calloc(w,sizeof(c));
-					memset(philler,45,w);
+					// w/2 <= w-(w/2)
+					int editorW = w/2;
 					pName = readYstr(thisProj.projName);
-					printf("\x1b]0;%s - yargine!\x1b\\\x1b[3m%s\x1b[0m - yargine!\n%s\n", pName, pName, philler);
+					printf("\x1b]0;%s - yargine!\x1b\\\x1b[3m%s\x1b[0m - yargine!\n", pName, pName);
 					free(pName);
-					free(philler);
-					renderPicker(w-(w/2),h-2);
+					renderPicker(editorW,h-1);
+					printf("\x1b[H\n\x1b[%dCh", w/2);
 					break;
 				default:
 					err = "unknown render mode";
@@ -243,13 +254,13 @@ int main(int argc, c**argv) {
 			switch (initCh) {
 				case 27:
 					switch (renderM) {
-						case PICK:
 						case PROJ:
+						case PICK:
 							if (_getch()!=91) break;
 							int ch = _getch();
 							if ((ch<65)||(ch>68)) break;
 							needsRender = true;
-							if (ch>66) {
+							if ((ch>66)&&(renderM==PICK)) {
 								memset(full,0,sizeof(full));
 								memset(real,0,sizeof(real));
 								c*toSn = "..";
@@ -281,10 +292,11 @@ int main(int argc, c**argv) {
 					}
 					break;
 				case 10:
-				case 13: // fuckass windows
 					if ((renderM!=PICK)&&(renderM!=PROJ)) break;
-					dirB4Enter = calloc(strlen(dir)+1,sizeof(c));
-					strcpy(dirB4Enter,dir);
+					if (renderM==PICK) {
+						dirB4Enter = calloc(strlen(dir)+1,sizeof(c));
+						strcpy(dirB4Enter,dir);
+					}
 					memset(full,0,sizeof(full));
 					memset(real,0,sizeof(real));
 					c*chosen = ".";
@@ -297,6 +309,12 @@ int main(int argc, c**argv) {
 					c*steppingStone = calloc(sizeof(c), strlen(real)+1);
 					strcpy(steppingStone, real);
 					if (renderM==PROJ) {
+						if (isDir(steppingStone)) {
+							free(dir);
+							dir=steppingStone;
+							resetDirForPROJ();
+							break;
+						}
 						openFileWithGUI(steppingStone);
 						free(steppingStone);
 						break;
@@ -305,7 +323,7 @@ int main(int argc, c**argv) {
 					dir=steppingStone;
 					needsRender = true;
 					bool yargValid = readYarg();
-					// there was a massive section of code to check if yarg.bin + ystr.bin for a single bool on here, but i decided to snip it off for the lines.
+					// there was a massive section of code here
 					// day 2 of saving overhead every day™ (trust)
 					int isNonEmpty = 0;
 					c**jorked = jorkdir(dir, &isNonEmpty);
@@ -321,12 +339,9 @@ int main(int argc, c**argv) {
 						break;
 					}
 					if ((yargValid)&&(isNonEmpty)) { // explicitly check if non empty...
-						freeJorked(dirStuff, dirStuffSz);
-						int unfitSz;
-						c**unfit = jorkdir(dir, &unfitSz);
-						dirStuffSz = unfitSz;
-						dirStuff = filterJorked(unfit, &dirStuffSz, true);
-						freeJorked(unfit, unfitSz);
+						projDir = calloc(strlen(dir)+1,sizeof(c));
+						strcpy(projDir,dir);
+						resetDirForPROJ();
 						renderM = PROJ;
 						break;
 					}
