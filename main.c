@@ -308,8 +308,10 @@ int main(int argc, c**argv) {
 					}
 					c*steppingStone = calloc(sizeof(c), strlen(real)+1);
 					strcpy(steppingStone, real);
+					needsRender = true;
 					if (renderM==PROJ) {
 						if (isDir(steppingStone)) {
+							fileIdx = 0;
 							free(dir);
 							dir=steppingStone;
 							resetDirForPROJ();
@@ -321,7 +323,8 @@ int main(int argc, c**argv) {
 					}
 					free(dir);
 					dir=steppingStone;
-					needsRender = true;
+					projDir = calloc(strlen(dir)+1,sizeof(c));
+					strcpy(projDir,dir);
 					bool yargValid = readYarg();
 					// there was a massive section of code here
 					// day 2 of saving overhead every day™ (trust)
@@ -339,8 +342,6 @@ int main(int argc, c**argv) {
 						break;
 					}
 					if ((yargValid)&&(isNonEmpty)) { // explicitly check if non empty...
-						projDir = calloc(strlen(dir)+1,sizeof(c));
-						strcpy(projDir,dir);
 						resetDirForPROJ();
 						renderM = PROJ;
 						break;

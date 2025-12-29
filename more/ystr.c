@@ -72,15 +72,16 @@ bool initYarg(c*name, c*main) {
 	return true;
 }
 
+// REMEMBER: BEFORE CALLING, ALWAYS SET |projDir|, I BEG
 bool readYarg() { // despite it's name, also checks ystr.bin + the main file now!
 	memset(full,0,sizeof(full));
 	snprintf(full, sizeof(full), "%s/%s", dir, "yarg.bin");
 	FILE*ygFile = fopen(full,"rb");
 	if (!(ygFile)) return false;
 	size_t amnt = fread(&thisProj, sizeof(thisProj), 1, ygFile);
-	if (strncmp(thisProj.hdr,"YARG",4)!=0) return false;
 	fclose(ygFile);
 	if (amnt!=1) return false;
+	if (strncmp(thisProj.hdr,"YARG",4)!=0) return false;
 	yHdr ystrHdr;
 	memset(full,0,sizeof(full));
 	snprintf(full, sizeof(full), "%s/%s", dir, "ystr.bin");
@@ -90,9 +91,9 @@ bool readYarg() { // despite it's name, also checks ystr.bin + the main file now
 		fclose(yrFile);
 		return false;
 	}
-	if (strncmp(ystrHdr,"YSTR",4)!=0) return false;
 	fclose(yrFile);
-	c*mainFile = readYstr(thisProj.main);
+	if (strncmp(ystrHdr,"YSTR",4)!=0) return false;
+	c*mainFile = readYstr(thisProj.main); // THIS USES |projDir| INSTEAD OF |dir|
 	memset(full,0,sizeof(full));
 	snprintf(full, sizeof(full), "%s/%s", dir, mainFile);
 	free(mainFile);
