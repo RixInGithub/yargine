@@ -9,13 +9,21 @@ void renderPicker(int wd, int hi) {
 	int allowedCols = hi-reservedCols;
 	int off = 0;
 	if (fileIdx!=0) off=(fileIdx/allowedCols)*allowedCols;
+	c*truncated = malloc(wd+1);
 	while (count<hi-reservedCols) {
 		if (count>0) printf("\n\x1b[0m");
 		if ((dirStuffSz==0)&&(count==0)) printf("\x1b[3mmt"); // i print it before any |\x1b[7m|s
 		if (count+off==fileIdx) printf("\x1b[7m");
-		if (count+off<dirStuffSz) printf("%-*s",wd,dirStuff[count+off]);
+		if (count+off<dirStuffSz) {
+			size_t realLen = strlen(dirStuff[count+off]);
+			memset(truncated,0,wd+1);
+			memcpy(truncated, dirStuff[count+off], (realLen<wd)?realLen:wd);
+			if (realLen>wd) memset(truncated+wd-3,46,3);
+			printf("%-*s",wd,truncated);
+		}
 		count++;
 	}
+	free(truncated);
 	printf("\x1b[0m");
 	if (reservedCols==0) return;
 	printf("\n%s\n", tip);
