@@ -308,7 +308,7 @@ int main(int argc, c**argv) {
 					}
 					c*steppingStone = calloc(sizeof(c), strlen(real)+1);
 					strcpy(steppingStone, real);
-					needsRender = true;
+					needsRender = true; // yes, even if |renderM==PROJ| and |steppingStone| isn't a dir.
 					if (renderM==PROJ) {
 						if (isDir(steppingStone)) {
 							fileIdx = 0;

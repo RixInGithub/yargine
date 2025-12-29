@@ -38,7 +38,7 @@ void renderRoot(bool isPick) {
 	printf("%s%s\x1b[3%d;1m%s\x1b[0m\n%s", nls, pad, 1+(isPick*4), name, nls);
 	if (!(isPick)) {
 		printf("the folder you selected was detected not a yargine project (or a yargine project for an older/newer version of yargine.)\n");
-		printf("please select an action using the highlighted letters, then press enter.\n%s\n",dir);
+		printf("please select an action using the highlighted letters, then press enter.\n\n");
 		printf("\x1b[7mw\x1b[0mipe contents\n\x1b[7mc\x1b[0mancel");
 		return;
 	}
