@@ -4,7 +4,7 @@
 void renderPicker(int wd, int hi) {
 	size_t count = 0;
 	memset(full,0,sizeof(full));
-	c tip[] = "use UP/DOWN 2 navigate, LEFT 2 .., RIGHT to enter, ENTER to submit.";
+	c tip[] = "use UP/DOWN 2 navigate, LEFT 2 .., RIGHT to enter dir, ENTER to submit.";
 	int reservedCols = ((wd==w)&&(w>=(sizeof(tip)+1)))*2;
 	int allowedCols = hi-reservedCols;
 	int off = 0;
@@ -50,10 +50,20 @@ void renderRoot(bool isPick) {
 		printf("\x1b[7mw\x1b[0mipe contents\n\x1b[7mc\x1b[0mancel");
 		return;
 	}
-	printf("%s  ",nls);
-	if (!(cwdValid)) printf("\x1b[1myour cwd isn't a valid yargine project!\x1b[0m ");
-	printf("choose project:\n%s", nls);
+	printf("%s  \x1b[1myour cwd isn't a valid yargine project!\x1b[0m choose project:\n%s",nls,nls);
 	renderPicker(w,h-((h/10)*4+2));
 	free(pad);
 	free(nls);
+}
+
+void renderPROJ_View(int x, int y, int wd, int hi) {
+	int yOff = 0;
+	#define __PRINTLN(s, ...) printf(s,##__VA_ARGS__);ansiGoTo(x,y+(++yOff))
+	ansiGoTo(x,y); // setup pos
+	size_t vpsLen = strlen(vp2Str[pvMode]);
+	c*philler = calloc(wd-vpsLen-3,sizeof(c));
+	memset(philler,58,wd-vpsLen-4);
+	__PRINTLN(":: \x1b[3m%s\x1b[0m %s",vp2Str[pvMode],philler);
+	__PRINTLN("the view is awesome!");
+	#undef __PRINTLN
 }

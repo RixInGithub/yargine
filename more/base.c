@@ -42,3 +42,5 @@ void openFileWithGUI(c*f) {
 	}
 	_exit(0); // meh, just in case...
 }
+
+void ansiGoTo(int x, int y) {printf("\x1b[%d;%dH", y+1, x+1);}

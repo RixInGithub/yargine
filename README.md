@@ -13,7 +13,7 @@ requirements:
 - jorkdir (submodule)
 - cwalk (submodule)
 
-planned usage: [binaryen](https://github.com/WebAssembly/binaryen/), [libnanoid](https://github.com/lukateras/libnanoid/)
+planned usage: [binaryen](https://github.com/WebAssembly/binaryen/)
 
 before building, run `git submodule update --init --recursive` just in case or smth idk
 
@@ -23,5 +23,4 @@ for linux, just run `./build` and it'll automatically build for you and launch y
 - base project render screen
 - lyarg
 - wasm export (with binaryen)
-- [castle](https://castle.xyz) export
 - native linux/windows export (with sdl?)

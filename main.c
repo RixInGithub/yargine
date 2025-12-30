@@ -29,6 +29,17 @@ c**dirStuff;
 RenderMode renderM;
 bool cwdValid;
 c*projDir;
+PViewMode pvMode;
+c**vp2Str = (c*[]){
+	[SETT] = "settinms",
+	[EXPT] = "export",
+	[YRGS] = "yargine settinms"
+};
+c**vp2Ch = (c*[]){
+	[SETT] = "s",
+	[EXPT] = "e",
+	[YRGS] = "y"
+};
 
 // strings file => "ystr.bin"
 // base project => "yarg.bin"
@@ -154,11 +165,19 @@ __attribute__((destructor)) void cleanup() {
 
 int main(int argc, c**argv) {
 	cwk_path_set_style(CWK_STYLE_UNIX); // i dont think im swallowing the windows pill anytime soon
-	cwdValid = readYarg();
 	dirB4Enter = malloc(1); // 100% freeable
-	projDir = malloc(1);
 	dir = getcwd(NULL, 0);
-	setupDirCnsts();
+	projDir = dir;
+	cwdValid = readYarg(); // check cwd when |dir| & |projDir| are there
+	if (cwdValid) {
+		resetDirForPROJ();
+		pvMode = SETT;
+		renderM = PROJ;
+	}
+	if (renderM != PROJ) {
+		projDir = malloc(1);
+		setupDirCnsts();
+	}
 	tcgetattr(STDIN_FILENO, &oldt);
 	newt = oldt;
 	newt.c_lflag &= ~(ICANON | ECHO);
@@ -209,13 +228,13 @@ int main(int argc, c**argv) {
 					renderM = PROJ;
 					break;
 				case PROJ:
-					// w/2 <= w-(w/2)
-					int editorW = w/2;
 					pName = readYstr(thisProj.projName);
 					printf("\x1b]0;%s - yargine!\x1b\\\x1b[3m%s\x1b[0m - yargine!\n", pName, pName);
 					free(pName);
+					// w/2 <= w-(w/2)
+					int editorW = w/2;
 					renderPicker(editorW,h-1);
-					printf("\x1b[H\n\x1b[%dCh", w/2);
+					renderPROJ_View(editorW,1,w-editorW,h-1);
 					break;
 				default:
 					err = "unknown render mode";
@@ -260,26 +279,38 @@ int main(int argc, c**argv) {
 							int ch = _getch();
 							if ((ch<65)||(ch>68)) break;
 							needsRender = true;
-							if ((ch>66)&&(renderM==PICK)) {
-								memset(full,0,sizeof(full));
-								memset(real,0,sizeof(real));
-								c*toSn = "..";
-								if (ch==66+1) { // absolutely none of that 69 ripoff in my code
-									// this only executes user pressed right btw
-									if (dirStuffSz==0) break; // only run the changing cmd when im not on an empty dir
-									toSn = dirStuff[fileIdx];
+							if (ch>66) {
+								switch (renderM) {
+									case PICK:
+										memset(full,0,sizeof(full));
+										memset(real,0,sizeof(real));
+										c*toSn = "..";
+										if (ch==66+1) { // absolutely none of that 69 ripoff in my code
+											// this only executes user pressed right btw
+											if (dirStuffSz==0) break; // only run the changing cmd when im not on an empty dir
+											toSn = dirStuff[fileIdx];
+										}
+										snprintf(full, sizeof(full), "%s/%s", dir, toSn);
+										if (realpath(full,real)==NULL) {
+											err = "realpath failed";
+											return 1;
+										}
+										c*steppingStone = calloc(sizeof(c), strlen(real)+1);
+										strcpy(steppingStone, real);
+										free(dir);
+										dir=steppingStone;
+										freeJorked(dirStuff, dirStuffSz);
+										setupDirCnsts();
+										break;
+									case PROJ:
+										int incr = 1;
+										if (ch==68) incr = -1;
+										pvMode = (pvMode+incr+PVIEWS)%(PVIEWS);
+										break;
+									default:
+										__builtin_unreachable(); // neato
+										break;
 								}
-								snprintf(full, sizeof(full), "%s/%s", dir, toSn);
-								if (realpath(full,real)==NULL) {
-									err = "realpath failed";
-									return 1;
-								}
-								c*steppingStone = calloc(sizeof(c), strlen(real)+1);
-								strcpy(steppingStone, real);
-								free(dir);
-								dir=steppingStone;
-								freeJorked(dirStuff, dirStuffSz);
-								setupDirCnsts();
 								break;
 							}
 							if (dirStuffSz==0) break;
@@ -343,6 +374,7 @@ int main(int argc, c**argv) {
 					}
 					if ((yargValid)&&(isNonEmpty)) { // explicitly check if non empty...
 						resetDirForPROJ();
+						pvMode = SETT;
 						renderM = PROJ;
 						break;
 					}

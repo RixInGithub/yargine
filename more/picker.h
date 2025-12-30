@@ -2,4 +2,5 @@
 #define PICKER_H
 void renderPicker(int, int);
 void renderRoot(bool);
+void renderPROJ_View(int, int, int, int);
 #endif

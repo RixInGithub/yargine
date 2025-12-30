@@ -19,8 +19,14 @@
 #include "binaryen-c.h"
 #include "readline/readline.h"
 #include "readline/history.h"
-#include "cwalk.h" // diabolical
+#include "cwalk.h"
 
+typedef enum {
+	SETT,
+	EXPT,
+	YRGS,
+	PVIEWS
+} PViewMode;
 typedef char c;
 extern c full[PATH_MAX];
 extern c real[PATH_MAX];
@@ -31,11 +37,13 @@ extern int dirStuffSz;
 extern int w;
 extern int h;
 extern c**dirStuff;
-extern bool cwdValid;
 extern c*err;
+extern PViewMode pvMode;
+extern c**vp2Str;
 
 bool isDir(c*);
 void freeJorked(c**, int);
 void wipeDir(c*);
 void openFileWithGUI(c*);
+void ansiGoTo(int, int);
 #endif
