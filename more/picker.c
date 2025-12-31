@@ -56,14 +56,78 @@ void renderRoot(bool isPick) {
 	free(nls);
 }
 
-void renderPROJ_View(int x, int y, int wd, int hi) {
-	int yOff = 0;
-	#define __PRINTLN(s, ...) printf(s,##__VA_ARGS__);ansiGoTo(x,y+(++yOff))
+int x,y,wd,xOff;
+
+void __PRINT(c*s, ...) {
+	va_list args;
+	va_list args1;
+	va_start(args, s);
+	va_copy(args1, args);
+	size_t needed = vsnprintf(NULL, 0, s, args1);
+	va_end(args1);
+	c*buf = calloc(needed+1,sizeof(c)); // auto-memsets!
+	vsprintf(buf, s, args);
+	va_end(args);
+	size_t cnt = 0;
+	bool isNl, isLead;
+	while (cnt<needed) {
+		isNl = ((buf[cnt]==10)||(buf[cnt]==13));
+		if (((xOff%wd==0)&&(xOff>0))||(isNl)) {
+			xOff=0;
+			printf("\n\x1b[%dG", x+1);
+			if (isNl) {
+				if ((buf[cnt]==13)&&(buf[cnt+1]==10)) cnt++;
+				cnt++;
+				continue;
+			}
+		}
+		while ((buf[cnt]==32)&&(xOff==0)) cnt++;
+		putc(buf[cnt],stdout);
+		xOff++;
+		cnt++;
+	}
+	free(buf);
+}
+
+void renderPROJ_View(int _x, int _y, int _wd, int hi) {
+	x=_x;
+	y=_y;
+	wd=_wd;
+	xOff=0;
 	ansiGoTo(x,y); // setup pos
 	size_t vpsLen = strlen(vp2Str[pvMode]);
 	c*philler = calloc(wd-vpsLen-3,sizeof(c));
 	memset(philler,58,wd-vpsLen-4);
-	__PRINTLN(":: \x1b[3m%s\x1b[0m %s",vp2Str[pvMode],philler);
-	__PRINTLN("the view is awesome!");
-	#undef __PRINTLN
+	__PRINT(":: ");
+	printf("\x1b[3m%s\x1b[0m",vp2Str[pvMode]);
+	__PRINT(" %s\n",philler); // resets the xOff so future |__PRINT|s dont attempt to print on line №1
+	switch (pvMode) {
+		case INTRO:
+			__PRINT("welcome to ");
+			printf("\x1b[35;1m");
+			__PRINT("yargine");
+			printf("\x1b[0m!\n");
+			__PRINT("\ncheck out the ");
+			printf("\x1b[1m");
+			__PRINT("github repo");
+			printf("\x1b[0m");
+			__PRINT(
+				": https://github.com/RixInGithub/yargine/\n"
+				"\n"
+				"yargine is a game engine made in pure c for the newgens that has an editor on the terminal! "
+				"(since they'll have NO IDEA what a \"terminal\" is)\n"
+				"\n"
+				"press P to scroll up this text, and L to scroll down." // wip
+			);
+			break;
+		case SETT:
+			__PRINT("wip\n");
+			break;
+		case EXPT:
+			__PRINT("plz pick an export from these presets i made myself:\n\nwip");
+			break;
+		case YRGS:
+			__PRINT("wip\n");
+			break;
+	}
 }

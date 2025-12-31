@@ -44,3 +44,7 @@ void openFileWithGUI(c*f) {
 }
 
 void ansiGoTo(int x, int y) {printf("\x1b[%d;%dH", y+1, x+1);}
+
+void initPvMode() {
+	pvMode = INTRO;
+}

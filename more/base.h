@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 #include "jorkdir.h"
 #include "binaryen-c.h"
@@ -22,6 +23,7 @@
 #include "cwalk.h"
 
 typedef enum {
+	INTRO,
 	SETT,
 	EXPT,
 	YRGS,
@@ -40,10 +42,12 @@ extern c**dirStuff;
 extern c*err;
 extern PViewMode pvMode;
 extern c**vp2Str;
+extern c**vp2Ch;
 
 bool isDir(c*);
 void freeJorked(c**, int);
 void wipeDir(c*);
 void openFileWithGUI(c*);
 void ansiGoTo(int, int);
+void initPvMode();
 #endif

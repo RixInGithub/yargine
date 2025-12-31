@@ -31,6 +31,7 @@ bool cwdValid;
 c*projDir;
 PViewMode pvMode;
 c**vp2Str = (c*[]){
+	[INTRO] = "welkommen",
 	[SETT] = "settinms",
 	[EXPT] = "export",
 	[YRGS] = "yargine settinms"
@@ -171,7 +172,7 @@ int main(int argc, c**argv) {
 	cwdValid = readYarg(); // check cwd when |dir| & |projDir| are there
 	if (cwdValid) {
 		resetDirForPROJ();
-		pvMode = SETT;
+		initPvMode();
 		renderM = PROJ;
 	}
 	if (renderM != PROJ) {
@@ -246,6 +247,24 @@ int main(int argc, c**argv) {
 			int initCh = _getch();
 			if ((initCh>64)&&(initCh<91)) initCh+=32;
 			if (isalpha(initCh)) {
+				if (renderM==PROJ) {
+					size_t cnt1 = 0;
+					bool didFind = false;
+					while (cnt1<PVIEWS) {
+						if ((vp2Ch[cnt1]!=NULL)&&(*vp2Ch[cnt1]!=0)) {
+							c idek = *vp2Ch[cnt1];
+							if ((idek>64)&&(idek<91)) idek+=32; // match initCh
+							if (*vp2Ch[cnt1]==initCh) {
+								pvMode = cnt1;
+								didFind = true;
+								needsRender = true;
+								break;
+							}
+						}
+						cnt1++;
+					}
+					if (didFind) continue; // whatever dude
+				}
 				initCh-=97;
 				switch (initCh) {
 					case 16:
@@ -374,7 +393,7 @@ int main(int argc, c**argv) {
 					}
 					if ((yargValid)&&(isNonEmpty)) { // explicitly check if non empty...
 						resetDirForPROJ();
-						pvMode = SETT;
+						initPvMode();
 						renderM = PROJ;
 						break;
 					}

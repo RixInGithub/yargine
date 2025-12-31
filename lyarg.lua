@@ -12,13 +12,17 @@ local ops = "+-*/" -- c*... nomz..
 function expressionParse()
 	local out = ""
 	if string.find(ops,__inp:sub(1,1),1,true)~=nil then
+		out = __inp:sub(1,1)
 		if not isWS(__inp:sub(2,2)) then error("expected whitespace") end
 		__inp=__inp:sub(3) -- day 5 of saving overhead every day™ (trust)
 		slurpWS()
-
-		return
+		expressionParse() -- parse again
+		return out
 	end
-	return out
+	if string.find("0123456789",__inp:sub(1,1),1,true)~=nil then
+		
+	end
+	return ""
 end
 
 function isWS(c)
