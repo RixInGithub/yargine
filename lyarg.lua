@@ -11,16 +11,22 @@ local ops = "+-*/" -- c*... nomz..
 
 function expressionParse()
 	local out = ""
+	slurpWS() -- just in case
 	if string.find(ops,__inp:sub(1,1),1,true)~=nil then
 		out = __inp:sub(1,1)
 		if not isWS(__inp:sub(2,2)) then error("expected whitespace") end
 		__inp=__inp:sub(3) -- day 5 of saving overhead every day™ (trust)
 		slurpWS()
-		expressionParse() -- parse again
+		out = out .. " " .. expressionParse() -- parse again
+		if not isWS(__inp:sub(1,1)) then error("expected whitespace") end
+		__inp=__inp:sub(2)
+		out = out .. " " .. expressionParse() -- and againz!
 		return out
 	end
 	if string.find("0123456789",__inp:sub(1,1),1,true)~=nil then
-		
+		out = __inp:match("^%d+")
+		__inp=__inp:sub(#out+1)
+		return out
 	end
 	return ""
 end
@@ -53,7 +59,6 @@ end
 function slurpComment()
 	local firstNl = __inp:find("\n")
 	local firstCr = __inp:find("\r")
-	print(firstNl,firstCr)
 	if firstNl==nil and firstCr==nil then return (function()__inp=""end)() end -- way to get around assignment not being an expression
 	local won = -1
 	if firstNl == nil then won = firstCr end
@@ -93,13 +98,25 @@ while #__inp>0 do
 				error(string.format("can't yar%s a yar%s'd yariable", isConst and "g" or "", isConst and "" or "g"))
 			end
 		end
-		slurpWS() -- yup, even before |:|. see, i told you it's optional! (incoming pun on the C reimplementation hehe)
-		if string.find(":=",__inp:sub(1,1),1,true)==nil then
-			error(string.format("ye folk expected a symbol to yar%s", isConst and "g" or ""))
+		if isConst then
+			for _,a in ipairs(varTbl) do
+				if a==id then
+					error("can't yarg a yarg'd yariable")
+				end
+			end
+		end
+		slurpWS() -- yup, even before |:|. see, i told you it's optional!
+		local sign = __inp:sub(1,1)
+		if string.find(":=",sign,1,true)==nil then
+			error(string.format("ye folk expected a colon or equal sign to yar%s", isConst and "g" or ""))
 		end
 		__inp = __inp:sub(2)
-		print("got variable", id)
+		slurpWS()
 		table.insert(varTbl,id)
-		-- expressions only when i decide the c tui's good enough
+		local exp = expressionParse() -- |lua -e "print(exp==nil)"| => |true| on my machine™ why it ourple
+		if exp=="" then error("expected expressionoso") end
+		table.insert(parsed,#exp..":"..exp)
+		print("added a var!")
 	end
 end
+print(require("dkjson").encode(parsed))

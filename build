@@ -5,6 +5,6 @@ DIR=~/Documents/yargTesting/ # change to . if you don't want cd
 xxd -i template.yrg > more/template.h
 # libnanoid: libnanoid/*.c -Ilibnanoid
 # binaryen: -lbinaryen
-gcc main.c jorkdir/*.c cwalk/src/*.c more/*.c -Icwalk/include -Imore -Ijorkdir -lreadline -o yargine.x86_64 -O3
+gcc main.c jorkdir/*.c cwalk/src/*.c more/*.c -Icwalk/include -Imore -Ijorkdir -lreadline -o yargine.x86_64 -O3 -D__YCOMMIT=\"`git log -1 --format="%h"`\" # backticks act like $() sometimes ig now
 [ -z "$1" ] && cd $DIR && $CWD/yargine.x86_64 && cd $CWD
 rm $CWD/more/template.h

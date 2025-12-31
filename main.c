@@ -160,8 +160,17 @@ __attribute__((destructor)) void cleanup() {
 	free(dir);
 	free(dirB4Enter);
 	freeJorked(dirStuff, dirStuffSz);
-	if (*err==0) return;
-	printf("\x1b[31;1m%s\x1b[0m\n",err);
+	if (*err==0) {
+		// poem shit
+		printf(
+			"\nonce upon a time... there was a godot,\n"
+			"and there was a yargine.\n"
+			"together, they kick eachother in the ass,\n"
+			"as if they both run like shit. i have no idea why, but i do know you're switching, i beg of you to stay.\n"
+		);
+		return;
+	}
+	printf("\x1b[31;1m%s\x1b[0m\n", err);
 }
 
 int main(int argc, c**argv) {
@@ -184,6 +193,7 @@ int main(int argc, c**argv) {
 	newt.c_lflag &= ~(ICANON | ECHO);
 	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
+	printf("[ \x1b[35;1myargine!\x1b[0m | last commit: " __YCOMMIT " ]\n"); // printing here RIGHT before the switch
 	switchBufs(2);
 	signal(SIGINT, exitHand);
 	signal(SIGTERM, exitHand);
