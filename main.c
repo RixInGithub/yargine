@@ -81,7 +81,7 @@ c**filterJorked(c**jorked, int*sz, bool filesToo, bool dotdot) { // only point i
 		c*unfinished = jorked[count];
 		snprintf(full, sizeof(full), "%s/%s", dir, unfinished);
 		bool can = filesToo?true:isDir(full);
-		if ((can)&&((strcmp(unfinished,"..")==0)==dotdot)) { // xnor
+		if ((can)&&((strcmp(unfinished,"..")!=0)||(dotdot))) {
 			int idx = resSize++;
 			res = realloc(res, resSize*sizeof(c*));
 			res[idx] = malloc(strlen(unfinished) + 1);

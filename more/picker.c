@@ -5,7 +5,8 @@ void renderPicker(int wd, int hi) {
 	size_t count = 0;
 	memset(full,0,sizeof(full));
 	c tip[] = "use UP/DOWN 2 navigate, LEFT 2 .., RIGHT to enter dir, ENTER to submit.";
-	int reservedCols = ((wd==w)&&(w>=(sizeof(tip)+1)))*2;
+	bool canTip = ((wd>=(sizeof(tip)+1))&&(wd==w));
+	int reservedCols = canTip+1;
 	int allowedCols = hi-reservedCols;
 	int off = 0;
 	if (fileIdx!=0) off=(fileIdx/allowedCols)*allowedCols;
@@ -23,13 +24,20 @@ void renderPicker(int wd, int hi) {
 		}
 		count++;
 	}
-	free(truncated);
 	printf("\x1b[0m");
-	if (reservedCols==0) return;
-	printf("\n%s\n", tip);
+	if (reservedCols==0) return free(truncated);
+	printf("\n");
+	if (canTip) printf("%s\n", tip);
 	c*selected = "";
 	if (dirStuffSz>0) selected = dirStuff[fileIdx];
-	printf("\x1b[7m%s%s%s\x1b[0m", dir, ((*selected!=0)&&(dir[1]!=0))?"/":"", selected);
+	memset(full, 0, sizeof(full));
+	snprintf(full, sizeof(full), "%s%s%s", dir, ((*selected!=0)&&(dir[1]!=0))?"/":"", selected);
+	size_t realLen = strlen(full);
+	memset(truncated,0,wd+1);
+	memcpy(truncated, full, (realLen<wd)?realLen:wd);
+	if (realLen>wd) memset(truncated+wd-3,46,3);
+	printf("\x1b[7m%s\x1b[0m", truncated);
+	free(truncated);
 }
 
 void renderRoot(bool isPick) {
