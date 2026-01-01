@@ -1,4 +1,5 @@
 <div align="center">
+	<img src="y.svg" width="64">
 	<h1>yargine!</h1>
 	<blockquote><i>a game engine for the newgens, i guess.</i></blockquote>
 </div>
