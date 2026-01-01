@@ -12,3 +12,4 @@ done
 appimagetool yargine.AppDir yargine.AppImage #> /dev/null 2>&1 # silence your logs at last
 rm -rf yargine.AppDir
 [ -z "$1" ] && cd $DIR && $CWD/yargine.AppImage && cd $CWD
+true
