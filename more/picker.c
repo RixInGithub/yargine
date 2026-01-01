@@ -11,7 +11,7 @@ void renderPicker(int wd, int hi) {
 	int off = 0;
 	if (fileIdx!=0) off=(fileIdx/allowedCols)*allowedCols;
 	c*truncated = malloc(wd+1);
-	while (count<hi-reservedCols) {
+	while (count<allowedCols) {
 		if (count>0) printf("\n\x1b[0m");
 		if ((dirStuffSz==0)&&(count==0)) printf("\x1b[3mmt"); // i print it before any |\x1b[7m|s
 		if (count+off==fileIdx) printf("\x1b[7m");
@@ -125,7 +125,7 @@ void renderPROJ_View(int _x, int _y, int _wd, int hi) {
 				"yargine is a game engine made in pure c for the newgens that has an editor on the terminal! "
 				"(since they'll have NO IDEA what a \"terminal\" is)\n"
 				"\n"
-				"press P to scroll up this text, and L to scroll down." // wip
+				"press I to scroll up this text, and K to scroll down." // wip
 			);
 			break;
 		case SETT:
