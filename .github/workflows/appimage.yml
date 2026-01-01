@@ -15,6 +15,7 @@ jobs:
                   sudo mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool
                   aria2c "https://github.com/WebAssembly/binaryen/releases/download/version_125/binaryen-version_125-x86_64-linux.tar.gz" -j 16 -x 16 -s 16
                   sudo tar --strip-components=1 -xzf binaryen-version_125-x86_64-linux.tar.gz -C /usr/local/
+                  sudo apt install libreadline-dev libreadline8t64 readline-common
                   ./mkappimage
             - uses: actions/upload-artifact@v6.0.0
               with:
