@@ -179,13 +179,15 @@ int main(int argc, c**argv) {
 	dir = getcwd(NULL, 0);
 	projDir = dir;
 	cwdValid = readYarg(); // check cwd when |dir| & |projDir| are there
+	projDir = malloc(strlen(dir)+1);
+	strcpy(projDir, dir);
 	if (cwdValid) {
 		resetDirForPROJ();
 		initPvMode();
 		renderM = PROJ;
 	}
-	if (renderM != PROJ) {
-		projDir = malloc(1);
+	if (!(cwdValid)) {
+		free(projDir);
 		setupDirCnsts();
 	}
 	tcgetattr(STDIN_FILENO, &oldt);
@@ -235,17 +237,29 @@ int main(int argc, c**argv) {
 						onRlExit();
 						break;
 					}
+					afterRl();
+					if (projDir) free(projDir);
+					projDir = malloc(strlen(dir)+1);
+					strcpy(projDir, dir);
+					resetDirForPROJ();
+					initPvMode();
 					initYarg(pName, main);
 					renderM = PROJ;
 					break;
 				case PROJ:
+					c*basePTitle = " - yargine!";
+					int pickerW = w/2;
+					int nameW = pickerW-strlen(basePTitle)-1;
 					pName = readYstr(thisProj.projName);
-					printf("\x1b]0;%s - yargine!\x1b\\\x1b[3m%s\x1b[0m - yargine!\n", pName, pName);
+					c*t = calloc(nameW+1,sizeof(c));
+					memcpy(t, pName, nameW);
+					if (strlen(pName)>nameW) memset(t+nameW-3,46,3);
+					printf("\x1b]0;%s%s\x1b\\\x1b[3m%s\x1b[0m%s\n", pName, basePTitle, t, basePTitle);
 					free(pName);
+					free(t);
 					// w/2 <= w-(w/2)
-					int editorW = w/2;
-					renderPicker(editorW,h-1);
-					renderPROJ_View(editorW,1,w-editorW,h-1);
+					renderPicker(pickerW,h-1);
+					renderPROJ_View(pickerW,0,w-pickerW,h);
 					break;
 				default:
 					err = "unknown render mode";

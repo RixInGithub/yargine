@@ -1,4 +1,9 @@
 ... this is lyarg, yargine's programming language to code your very own games!
 ... here are a few examples:
 
+... yariables!
+yar mutableLocal = 0
+yarg life = 42 ... shut up yargine
+... try to see what happens when you remove the comment on |life|'s definition!
+
 ... TODO
