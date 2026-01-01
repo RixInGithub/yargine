@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+[ ! -f yargine.x86_64 ] && ./build no
+cp -r appimage/. yargine.AppDir/
+mv yargine.x86_64 yargine.AppDir/yargine
+ldd yargine.AppDir/yargine | sed -n "s/.* => \(.*\) .*/\1/p" | while read -r l; do
+	mkdir -p "yargine.AppDir/$(dirname "$l")"
+	cp "$l" "yargine.AppDir/$l"
+done
+appimagetool yargine.AppDir
+rm -rf yargine.AppDir
