@@ -19,6 +19,9 @@ before building, run `git submodule update --init --recursive` just in case or s
 
 for linux, just run `./build` and it'll automatically build for you and launch yargine! (unless if you specify any arg)
 
+also on linux you can build a `yargine.AppImage`! doesn't that sound exciting? sure it does!
+just run `./mkappimage` and it'll create an `AppImage`!
+
 # roadmap?
 - lyarg
 - wasm export (with binaryen)

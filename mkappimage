@@ -6,5 +6,5 @@ ldd yargine.AppDir/yargine | sed -n "s/.* => \(.*\) .*/\1/p" | while read -r l; 
 	mkdir -p "yargine.AppDir/$(dirname "$l")"
 	cp "$l" "yargine.AppDir/$l"
 done
-appimagetool yargine.AppDir
+appimagetool yargine.AppDir yargine.AppImage
 rm -rf yargine.AppDir
