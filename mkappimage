@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 [ ! -f yargine.x86_64 ] && ./build no
 cp -r appimage/. yargine.AppDir/
-mv yargine.x86_64 yargine.AppDir/yargine
+mv yargine.x86_64 yargine.AppDir/yargine # sacrifice the yargine for the appdir...
 ldd yargine.AppDir/yargine | sed -n "s/.* => \(.*\) .*/\1/p" | while read -r l; do
 	mkdir -p "yargine.AppDir/$(dirname "$l")"
 	cp "$l" "yargine.AppDir/$l"
