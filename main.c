@@ -152,14 +152,16 @@ void switchBufs(int b) {
 }
 
 __attribute__((destructor)) void cleanup() {
-	fflush(stdout);
-	switchBufs(1);
-	oldt.c_lflag |= ICANON | ECHO; // in case i fucked up someone's terminal
-	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) & ~O_NONBLOCK);
-	free(dir);
-	free(dirB4Enter);
-	freeJorked(dirStuff, dirStuffSz);
+	if (dir) { // if i didnt panic from tty
+		fflush(stdout);
+		switchBufs(1);
+		oldt.c_lflag |= ICANON | ECHO; // in case i fucked up someone's terminal
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+		fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) & ~O_NONBLOCK);
+		free(dir);
+		free(dirB4Enter);
+		freeJorked(dirStuff, dirStuffSz);
+	}
 	if (*err==0) {
 		// poem shit
 		printf(
@@ -174,6 +176,15 @@ __attribute__((destructor)) void cleanup() {
 }
 
 int main(int argc, c**argv) {
+	#ifdef __YONLINE
+		printf("[ \x1b[35;1myargine \x1b[3monline!\x1b[0m ]\n");
+	#else
+		printf("[ \x1b[35;1myargine!\x1b[0m | last commit: " __YCOMMIT " ]\n");
+	#endif
+	if (!(isatty(STDIN_FILENO))) { // also refuses raw piped input (like |echo "q"|) but oh well it'll work for the online edition
+		err = "tty test failed";
+		return 1; // i have nothing to free here, yipe!
+	}
 	cwk_path_set_style(CWK_STYLE_UNIX); // i dont think im swallowing the windows pill anytime soon
 	dirB4Enter = malloc(1); // 100% freeable
 	dir = getcwd(NULL, 0);
@@ -195,7 +206,6 @@ int main(int argc, c**argv) {
 	newt.c_lflag &= ~(ICANON | ECHO);
 	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
-	printf("[ \x1b[35;1myargine!\x1b[0m | last commit: " __YCOMMIT " ]\n"); // printing here RIGHT before the switch
 	switchBufs(2);
 	signal(SIGINT, exitHand);
 	signal(SIGTERM, exitHand);
@@ -219,7 +229,7 @@ int main(int argc, c**argv) {
 					renderRoot(renderM==PICK);
 					break;
 				case PROJSETUP:
-					printf("\x1b]0;yargine!\x1b\\");
+					printf("\x1b]0;yargine%s!\x1b\\", TEXTRA);
 					printf("the folder you selected was eligible for a new yargine project or got fully wiped.\nplease take your time to set up your new project.\nnote: do press enter after pressing ^c. idk why. just do.\n\n\x1b[?25h");
 					needsRender = true;
 					newt.c_lflag |= ECHO;
@@ -247,7 +257,7 @@ int main(int argc, c**argv) {
 					renderM = PROJ;
 					break;
 				case PROJ:
-					c*basePTitle = " - yargine!";
+					c*basePTitle = " - yargine" TEXTRA "!";
 					int pickerW = w/2;
 					int nameW = pickerW-strlen(basePTitle)-1;
 					pName = readYstr(thisProj.projName);

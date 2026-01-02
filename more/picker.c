@@ -1,6 +1,10 @@
 #include "base.h"
 #include "picker.h"
 
+c*expts[] = {
+	"binaryen"
+};
+
 void renderPicker(int wd, int hi) {
 	size_t count = 0;
 	memset(full,0,sizeof(full));
@@ -41,17 +45,39 @@ void renderPicker(int wd, int hi) {
 }
 
 void renderRoot(bool isPick) {
-	printf("\x1b]0;%s!\x1b\\", isPick?"yargine":"warning!!");
+	c*pickT = "yargine" TEXTRA;
+	printf("\x1b]0;%s!\x1b\\", isPick?pickT:"warning!!");
 	c*pad;
 	c*nls = calloc(h/10+1, sizeof(c)); // +1 for null term
 	memset(nls, 10, h/10);
+	nls[h/10+1]=0;
 	c*name = "warning!!!";
-	if (isPick) name = "y \x20  a \x20  r \x20  g \x20  i \x20  n \x20  e \x20  !";
+	if (isPick) {
+		#ifndef __YONLINE
+			#define NEXTRA "    !"
+		#else
+			#define NEXTRA ""
+		#endif
+		name = "y    a    r    g    i    n    e" NEXTRA;
+		#undef NEXTRA
+	}
 	size_t nameLen = strlen(name);
-	size_t padLen = w>nameLen ? (w-strlen(name))/2 : 0;
-	pad = calloc(padLen, sizeof(c));
+	size_t padLen = w>nameLen ? (w-nameLen)/2 : 0;
+	pad = calloc(padLen+1, sizeof(c));
 	memset(pad, 32, padLen);
-	printf("%s%s\x1b[3%d;1m%s\x1b[0m\n%s", nls, pad, 1+(isPick*4), name, nls);
+	c*oPad = "";
+	c*o = "";
+	#ifdef __YONLINE
+		o = "online!";
+		int oPLen = w>strlen(o) ? (w-strlen(o))/2 : 0;
+		oPad = calloc(oPLen+1, sizeof(c));
+		memset(oPad, 32, oPLen);
+		oPad[oPLen]=0;
+	#endif
+	printf("%s%s\x1b[3%d;1m%s\x1b[0m\n%s\x1b[3;1m%s\x1b[0m%s", nls, pad, 1+(isPick*4), name, oPad, o, nls);
+	#ifdef __YONLINE
+		free(oPad);
+	#endif
 	if (!(isPick)) {
 		printf("the folder you selected was detected not a yargine project (or a yargine project for an older/newer version of yargine.)\n");
 		printf("please select an action using the highlighted letters, then press enter.\n\n");
@@ -64,7 +90,7 @@ void renderRoot(bool isPick) {
 	free(nls);
 }
 
-int x,y,wd,xOff;
+int x,y,wd,hi,xOff;
 
 void __PRINT(c*s, ...) {
 	va_list args;

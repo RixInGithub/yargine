@@ -4,6 +4,7 @@ CWD="$(pwd)"
 DIR=~/Documents/yargTesting/ # change to . if you don't want cd
 xxd -i template.yrg > more/template.h
 # binaryen: -lbinaryen
-gcc main.c jorkdir/*.c cwalk/src/*.c more/*.c -Icwalk/include -Imore -Ijorkdir -lreadline -o yargine.x86_64 -O3 -D__YCOMMIT=\"`git log -1 --format="%h"`\" # backticks act like $() sometimes ig now
-[ -z "$1" ] && cd $DIR && $CWD/yargine.x86_64 && cd $CWD
-rm $CWD/more/template.h
+gcc main.c jorkdir/*.c cwalk/src/*.c more/*.c -Icwalk/include -Imore -Ijorkdir -lreadline -o yargine.x86_64 -O3 -D__YCOMMIT=\"$(git log -1 --format="%h")\" $([ -n "$YONLINE" ] && echo "-D__YONLINE=\"$YONLINE\"")
+[ -z "$1" ] && [ -z "$YONLINE" ] && cd "$DIR" && "$CWD/yargine.x86_64"
+cd "$CWD"
+rm "$CWD/more/template.h"

@@ -22,6 +22,12 @@
 #include "readline/history.h"
 #include "cwalk.h"
 
+#ifdef __YONLINE
+	#define TEXTRA " online"
+#else
+	#define TEXTRA ""
+#endif
+
 typedef enum {
 	INTRO,
 	SETT,
@@ -43,6 +49,7 @@ extern c*err;
 extern PViewMode pvMode;
 extern c**vp2Str;
 extern c**vp2Ch;
+extern c*expts[];
 
 bool isDir(c*);
 void freeJorked(c**, int);

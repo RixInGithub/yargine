@@ -24,6 +24,7 @@ also on linux you can build a `yargine.AppImage`! doesn't that sound exciting? s
 just run `./mkappimage` and it'll create and launch an `AppImage`!
 
 # roadmap?
+- yargine online (yargine on ssh)
 - lyarg
 - wasm export (with binaryen)
 - native linux/windows export (with sdl?)
