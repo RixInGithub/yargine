@@ -123,10 +123,11 @@ void __PRINT(c*s, ...) {
 	free(buf);
 }
 
-void renderPROJ_View(int _x, int _y, int _wd, int hi) {
+void renderPROJ_View(int _x, int _y, int _wd, int _hi) {
 	x=_x;
 	y=_y;
 	wd=_wd;
+	hi=_hi;
 	xOff=0;
 	ansiGoTo(x,y); // setup pos
 	size_t vpsLen = strlen(vp2Str[pvMode]);
