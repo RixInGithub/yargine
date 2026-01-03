@@ -4,6 +4,9 @@
 
 yar mutableLocal = + 1 2
 yarg immutableGlobal = * 4 2 ... shut up yargine
+yar nothing = nonexistent
+yar arr = [1, 2, 3, {[4, 5, 6], [5, 8, + 5 8]}] ... array [1,2,3] with a split: 1st lane increases, 2nd lane is fib sequence.
+
 ...yarg zero: Int ... shut up yargine
 ... the comment above is the official way to silence any |yarg| warns.
 
