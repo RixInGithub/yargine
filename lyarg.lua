@@ -4,24 +4,58 @@
 	 btw _ is whitespace cuz its barely blank (cry about it)
 	 so instead of |+ 1 1| you can do |+_1_1| (fuck them snake case ppl) ]]
 parsed = {}
-inpIO = io.open(arg[1]or"./main.yrg")
+local file = arg[1]or"./main.yrg"
+inpIO = io.open(file)
 inp = inpIO:read("*a")
 inpIO:close()
 local __inp = inp:sub(1) -- copy of inp
 local ops = "+-*/" -- c*... nomz..
+local line = 1
+
+function kms(m)
+	error(string.format("%s@%d: %s", file, line, m), 0)
+end
+
+function isNL(c)
+	if #c~=1 then return false end
+	return string.find("\r\n",c,1,true)~=nil -- accurate c translation of doing this: |strchr("...",c)!=NULL|
+end
+
+function isWS(c)
+	if #c~=1 then return false end
+	return string.find("\x20\t_",c,1,true)~=nil or isNL(c)
+end
 
 function expressionParse()
 	local out = ""
 	slurpWS() -- just in case
 	if string.find(ops,__inp:sub(1,1),1,true)~=nil then
-		out = __inp:sub(1,1)
-		if not isWS(__inp:sub(2,2)) then error("expected whitespace") end
+		op = __inp:sub(1,1)
+		if not isWS(__inp:sub(2,2)) then kms("expected whitespace") end
 		__inp=__inp:sub(3) -- day 5 of saving overhead every day™ (trust)
 		slurpWS()
-		out = out .. " " .. expressionParse() -- parse again
-		if not isWS(__inp:sub(1,1)) then error("expected whitespace") end
+		local firstExp = expressionParse() -- parse again
+		out = op .. " " .. firstExp
+		if not isWS(__inp:sub(1,1)) then kms("expected whitespace") end
 		__inp=__inp:sub(2)
-		out = out .. " " .. expressionParse() -- and againz!
+		local sndExp = expressionParse() -- and againz!
+		out = out .. " " .. sndExp
+		if tonumber(firstExp) ~= nil and tonumber(sndExp) ~= nil then
+			a = tonumber(firstExp)
+			b = tonumber(sndExp)
+			if op == "+" then
+				return tostring(a+b)
+			end
+			if op == "-" then
+				return tostring(a-b)
+			end
+			if op == "*" then
+				return tostring(a*b)
+			end
+			if op == "/" then
+				return tostring(a/b):gsub("%.%d+$","") -- simulated integer division
+			end
+		end
 		return out
 	end
 	if string.find("0123456789",__inp:sub(1,1),1,true)~=nil then
@@ -37,73 +71,118 @@ function expressionParse()
 	local pInp = __inp:sub(1)
 	local isId, id = pcall(slurpUntilWS, "id")
 	if not isId then __inp = pInp end
-	if isId then return id end
-	if __inp:sub(1,1) == "[" then
-		out = "["
+	if isId then
+		pInp1 = __inp:sub(1)
+		slurpWS()
+		if __inp:sub(1,1) ~= "(" then
+			__inp = pInp1
+			return id
+		end
+		__inp = pInp -- prepare for function calling handling
+	end
+	pInp = __inp:sub(1)
+	isId, id = pcall(slurpUntilWS, "fname") -- reuse vars
+	if not isId then __inp = pInp end
+	if isId then
+		out = "f_"..id..">" -- no returns, integrate with array logic below for dry
+		slurpWS()
+	end
+	local open = isId and "(" or "["
+	if __inp:sub(1,1) == open then
+		local close = isId and ")" or "]" -- ill turn this to some arithmetic on a char in c
+		out = out..open
 		__inp = __inp:sub(2)
-		while __inp:sub(1,1) ~= "]" do
+		while __inp:sub(1,1) ~= close do
 			slurpWS()
-			if __inp:sub(1,1) == "{" then
+			if __inp:sub(1,1) == "{" and not isId then
 				__inp = __inp:sub(2)
 				slurpWS()
-				if __inp:sub(1,1) ~= "[" then error("magic knife that splits arrays to nonarrays? howz?") end
+				if __inp:sub(1,1) ~= "[" then kms("magic knife that splits arrays to nonarrays? howz?") end
 				local firstLn = expressionParse()
 				slurpWS()
-				if __inp:sub(1,1) ~= "," then error("blunt knife") end
+				if __inp:sub(1,1) ~= "," then kms("blunt knife") end
 				__inp = __inp:sub(2)
 				slurpWS()
-				if __inp:sub(1,1) ~= "[" then error("magic knife that splits arrays to nonarrays? howz?") end
+				if __inp:sub(1,1) ~= "[" then kms("magic knife that splits arrays to nonarrays? howz?") end
 				local sndLn = expressionParse()
 				slurpWS()
-				if __inp:sub(1,1) ~= "}" then error("expected }") end
+				if __inp:sub(1,1) ~= "}" then kms("expected }") end
 				__inp = __inp:sub(2)
 				slurpWS()
-				if __inp:sub(1,1) ~= "]" then error("expected ]") end
+				if __inp:sub(1,1) ~= "]" then kms("expected ]") end
 				__inp = __inp:sub(2)
-				return out:sub(1,-2) .. "]>" .. firstLn .. ">" .. sndLn
+				return "{" .. out:sub(1,-2) .. "]>" .. firstLn .. ">" .. sndLn .. "}"
 			end
 			out = out..expressionParse()
 			slurpWS()
-			if __inp:sub(1,1) ~= "]" then
-				if __inp:sub(1,1) ~= "," then error("expected ,") end
+			if __inp:sub(1,1) ~= close then
+				if __inp:sub(1,1) ~= "," then kms("expected comma") end
 				__inp = __inp:sub(2)
+				slurpWS()
+				if __inp:sub(1,1) == close then kms("ew trailing comma") end
+				out = out..","
 			end
-			out = out..","
 		end
 		__inp = __inp:sub(2)
-		return out:sub(1,-2) .. "]"
+		return out .. close
 	end
-	print(__inp:sub(1,1))
-	error("expected expressionoso")
+	if __inp:sub(1,1) == "\"" then
+		out = ""
+		__inp = __inp:sub(2)
+		while __inp:sub(1,1)~="\"" do
+			if #__inp==0 then kms("expected string end, got eof") end
+			local ch = __inp:sub(1,1)
+			local isEsc = ch == "\\"
+			if isNL(ch) then kms("expected string end, got newline") end
+			if isEsc then
+				__inp = __inp:sub(2) -- skip
+				if #__inp==0 then kms("expected char after \\, got eof") end
+				local nuxt = __inp:sub(1,1) -- nasty
+				if isNL(nuxt) then kms("expected char after \\, got newline") end
+				local escs = {r = "\r", n = "\n", t = "\t", b = "\x07", ["\""] = "\""} -- meh, maybe i'll add a json parser to add all the other json-esque escapes.
+				if escs[nuxt] == nil then kms("unknown escape \\"..ch) end
+				ch = escs[nuxt]
+			end
+			out = out .. ch
+			__inp = __inp:sub(2)
+		end
+		__inp=__inp:sub(2)
+		return "s_"..out
+	end
+	kms("expected expressionoso")
 end
 
 function addToLatestParse(txt)
 	parsed[#parsed] = parsed[#parsed]..#txt..">"..txt
 end
 
-function isWS(c)
-	if #c~=1 then return false end
-	return string.find("\x20\t\r\n_",c,1,true)~=nil -- accurate c translation of doing this: |strchr("...",c)!=NULL|
-end
-
 function slurpUntilWS(rule)
 	local out = ""
 	while (not isWS(__inp:sub(1,1))) and #__inp>0 do
-		ch = __inp:sub(1,1)
-		if rule == "id" and ch:find("[%a@#$]")==nil then
-			error("ye folk expected a name without a foul character inside")
+		local ch = __inp:sub(1,1)
+		if (rule == "id" or rule == "fname") and ch:find("[%a@#$]")==nil then
+			if (rule == "fname" and ch ~= "(") or rule == "id" then kms("ye folk expected a name without a foul character inside") end
+			if ch == "(" then
+				break -- we still have to check for keywords and stuff
+			end
 		end
 		out = out .. ch -- if only it was that simple in c...
 		__inp = __inp:sub(2) -- stare at this instead, this is easy in c. it's just |__inp++;|. look at it, the beauty hides within.
 	end
-	if rule=="id" and (out=="yar" or out=="yarg" or out=="f" or out=="nonexistent") then error("ye folk know the name from the legend of the keywords, is it really them? the keyword gods?") end -- populate with more keywords
+	if rule=="id" and (out=="yar" or out=="yarg" or out=="f" or out=="nonexistent") then kms("ye folk know the name from the legend of the keywords, is it really them? the keyword gods?") end -- populate with more keywords
 	-- if rule=="id" and out == "_specialStackStart" then out = "_"..out end -- actually go shit yourselves
 	-- anyways day 4 of saving overhead every day™ (trust)
 	return out
 end
 
 function slurpWS()
-	while isWS(__inp:sub(1,1)) do __inp=__inp:sub(2) end
+	while isWS(__inp:sub(1,1)) do
+		if isNL(__inp:sub(1,1)) then
+			if __inp:sub(1,2) == "\r\n" then __inp=__inp:sub(2) end
+			line = line + 1
+		end
+		__inp=__inp:sub(2)
+	end
 end
 
 function slurpComment()
@@ -117,6 +196,7 @@ function slurpComment()
 		won = math.min(firstNl, firstCr) -- this'll be a macro in c.
 	end
 	__inp = __inp:sub(won+1)
+	line = line + 1
 	slurpWS()
 end
 
@@ -144,20 +224,19 @@ while #__inp>0 do
 				-- id => yarg/yar
 				-- isConst => id => yarg, a => yar
 				-- not isConst => id => yar, a => yarg
-				error(string.format("can't yar%s a yar%s'd yariable", isConst and "g" or "", isConst and "" or "g"))
+				kms(string.format("can't yar%s a yar%s'd yariable", isConst and "g" or "", isConst and "" or "g"))
 			end
 		end
 		if isConst then
 			for _,a in ipairs(varTbl) do
 				if a==id then
-					error("can't yarg a yarg'd yariable")
+					kms("can't yarg a yarg'd yariable")
 				end
 			end
 		end
-		slurpWS() -- yup, even before |:|. see, i told you it's optional!
-		local sign = __inp:sub(1,1)
-		if string.find(":=",sign,1,true)==nil then
-			error(string.format("ye folk expected a colon or equal sign to yar%s", isConst and "g" or ""))
+		slurpWS()
+		if __inp:sub(1,1)~="=" then
+			kms(string.format("ye folk expected an equal sign to yar%s", isConst and "g" or ""))
 		end
 		__inp = __inp:sub(2)
 		slurpWS()
@@ -170,7 +249,7 @@ while #__inp>0 do
 		if isConst then
 			slurpWS()
 			if __inp:sub(1,19) == "... shut up yargine" then
-				if string.find("\r\n",__inp:sub(20,20),1,true) ~= nil then
+				if isNL(__inp:sub(20,20)) then
 					slurpComment()
 					goto lyarg_continue0
 				end
@@ -180,7 +259,8 @@ while #__inp>0 do
 		goto lyarg_continue0
 	end
 	print("before unknown char", __inp:sub(1))
-	error(string.format("unknown character 0x%x", __inp:byte(1)))
+	print(parsed[#parsed])
+	kms(string.format("unknown character 0x%x", __inp:byte(1)))
 	::lyarg_continue0::
 end
 print(table.concat(parsed,"\n"))
