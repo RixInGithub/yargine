@@ -151,13 +151,39 @@ void switchBufs(int b) {
 	}
 }
 
+void doTTY() {
+	tcgetattr(STDIN_FILENO, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
+	switchBufs(2);
+}
+
+void undoTTY() {
+	fflush(stdout);
+	switchBufs(1);
+	oldt.c_lflag |= ICANON | ECHO; // in case i fucked up someone's terminal
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) & ~O_NONBLOCK);
+}
+
+void tstp(int _) {
+	undoTTY();
+	fflush(stdout);
+	signal(SIGTSTP, SIG_DFL);
+	raise(SIGTSTP);
+}
+
+void cont(int _) {
+	signal(SIGTSTP, tstp);
+	doTTY();
+	needsRender = true;
+}
+
 __attribute__((destructor)) void cleanup() {
 	if (dir) { // if i didnt panic from tty
-		fflush(stdout);
-		switchBufs(1);
-		oldt.c_lflag |= ICANON | ECHO; // in case i fucked up someone's terminal
-		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-		fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) & ~O_NONBLOCK);
+		undoTTY();
 		free(dir);
 		free(dirB4Enter);
 		freeJorked(dirStuff, dirStuffSz);
@@ -201,15 +227,13 @@ int main(int argc, c**argv) {
 		free(projDir);
 		setupDirCnsts();
 	}
-	tcgetattr(STDIN_FILENO, &oldt);
-	newt = oldt;
-	newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
-	switchBufs(2);
+	doTTY();
 	signal(SIGINT, exitHand);
 	signal(SIGTERM, exitHand);
+	signal(SIGQUIT, exitHand);
 	signal(SIGWINCH, winch);
+	signal(SIGTSTP, tstp);
+	signal(SIGCONT, cont);
 	rl_startup_hook = __readline__startupHook;
 	while (running) {
 		if (resized) {
