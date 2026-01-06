@@ -79,9 +79,11 @@ bool readYarg() { // despite it's name, also checks ystr.bin + the main file now
 	FILE*ygFile = fopen(full,"rb");
 	if (!(ygFile)) return false;
 	size_t amnt = fread(&thisProj, sizeof(thisProj), 1, ygFile);
+	bool isEof = fgetc(ygFile)==EOF; // if not, there's more to the file that we don't know.
 	fclose(ygFile);
 	if (amnt!=1) return false;
 	if (strncmp(thisProj.hdr,"YARG",4)!=0) return false;
+	if (!(isEof)) return false;
 	yHdr ystrHdr;
 	memset(full,0,sizeof(full));
 	snprintf(full, sizeof(full), "%s/%s", dir, "ystr.bin");

@@ -32,7 +32,7 @@ function expressionParse()
 	if string.find(ops,__inp:sub(1,1),1,true)~=nil then
 		op = __inp:sub(1,1)
 		if not isWS(__inp:sub(2,2)) then kms("expected whitespace") end
-		__inp=__inp:sub(3) -- day 5 of saving overhead every day™ (trust)
+		__inp=__inp:sub(3) -- day 4 of saving overhead every day™ (trust)
 		slurpWS()
 		local firstExp = expressionParse() -- parse again
 		out = op .. " " .. firstExp
@@ -127,7 +127,6 @@ function expressionParse()
 		return out .. close
 	end
 	if __inp:sub(1,1) == "\"" then
-		out = ""
 		__inp = __inp:sub(2)
 		while __inp:sub(1,1)~="\"" do
 			if #__inp==0 then kms("expected string end, got eof") end
@@ -152,26 +151,22 @@ function expressionParse()
 	kms("expected expressionoso")
 end
 
-function addToLatestParse(txt)
-	parsed[#parsed] = parsed[#parsed]..#txt..">"..txt
+function addToLatestParse(...)
+	for _,t in ipairs({...}) do parsed[#parsed] = parsed[#parsed]..#t..">"..t end
 end
 
 function slurpUntilWS(rule)
 	local out = ""
 	while (not isWS(__inp:sub(1,1))) and #__inp>0 do
 		local ch = __inp:sub(1,1)
-		if (rule == "id" or rule == "fname") and ch:find("[%a@#$]")==nil then
-			if (rule == "fname" and ch ~= "(") or rule == "id" then kms("ye folk expected a name without a foul character inside") end
-			if ch == "(" then
-				break -- we still have to check for keywords and stuff
-			end
+		if (rule == "id" or rule == "fname" or rule == "farg") and ch:find("[%a@#$]")==nil then
+			if (rule == "fname" and ch ~= "(") or (rule == "farg" and (ch ~= ")" and ch ~= ",")) or rule == "id" then kms("ye folk expected a name without a foul character inside") end
+			break -- we still have to check for keywords and stuff
 		end
 		out = out .. ch -- if only it was that simple in c...
 		__inp = __inp:sub(2) -- stare at this instead, this is easy in c. it's just |__inp++;|. look at it, the beauty hides within.
 	end
 	if rule=="id" and (out=="yar" or out=="yarg" or out=="f" or out=="nonexistent") then kms("ye folk know the name from the legend of the keywords, is it really them? the keyword gods?") end -- populate with more keywords
-	-- if rule=="id" and out == "_specialStackStart" then out = "_"..out end -- actually go shit yourselves
-	-- anyways day 4 of saving overhead every day™ (trust)
 	return out
 end
 
@@ -203,6 +198,7 @@ end
 local yargTbl = {}
 local yarTbl = {}
 local fTbl = {}
+local fStk = {}
 if __inp:sub(1,2) == "#!" then slurpComment() end -- shebang (why not)
 while #__inp>0 do
 	slurpWS()
@@ -218,6 +214,8 @@ while #__inp>0 do
 		__inp = __inp:sub(skipTkn)
 		slurpWS()
 		id = slurpUntilWS("id")
+		table.insert(parsed,"")
+		addToLatestParse("yar"..(isConst and "g" or ""), id)
 		for _,a in ipairs(otrTbl) do
 			if a==id then
 				-- a => yar/yarg
@@ -234,6 +232,11 @@ while #__inp>0 do
 				end
 			end
 		end
+		for _,a in ipairs(fTbl) do
+			if a==id then
+				kms(string.format("can't yar%s a function", isConst and "g" or ""))
+			end
+		end
 		slurpWS()
 		if __inp:sub(1,1)~="=" then
 			kms(string.format("ye folk expected an equal sign to yar%s", isConst and "g" or ""))
@@ -241,10 +244,7 @@ while #__inp>0 do
 		__inp = __inp:sub(2)
 		slurpWS()
 		table.insert(varTbl,id)
-		local exp = expressionParse() -- |lua -e "print(exp==nil)"| => |true| on my machine™ why it ourple
-		table.insert(parsed,"")
-		addToLatestParse("yar"..(isConst and "g" or ""))
-		addToLatestParse(id)
+		local exp = expressionParse()
 		addToLatestParse(exp)
 		if isConst then
 			slurpWS()
@@ -258,9 +258,88 @@ while #__inp>0 do
 		end
 		goto lyarg_continue0
 	end
-	print("before unknown char", __inp:sub(1))
-	print(parsed[#parsed])
+	if __inp:sub(1,1)=="f" then
+		if not isWS(__inp:sub(2,2)) then kms("expected whitespace") end
+		__inp=__inp:sub(3)
+		slurpWS()
+		name = slurpUntilWS("fname")
+		table.insert(parsed,"")
+		addToLatestParse("fn", name)
+		for _,a in ipairs(yarTbl) do
+			if a==name then
+				kms("can't make a function with same name as a yariable")
+			end
+		end
+		for _,a in ipairs(yargTbl) do
+			if a==name then
+				kms("can't make a function with same name as a yariable")
+			end
+		end
+		for _,a in ipairs(fTbl) do
+			if a==name then
+				kms("\"what do you mean the 'function mitosed'?\"")
+			end
+		end
+		table.insert(fTbl,name)
+		table.insert(fStk,name)
+		table.insert(yarTbl,"_fnLocals")
+		table.insert(yargTbl,"_fnLocals")
+		slurpWS()
+		if __inp:sub(1,1) ~= "(" then kms("expected opening parentheses before yarguments") end
+		__inp=__inp:sub(2)
+		local a = ""
+		while __inp:sub(1,1) ~= ")" do
+			slurpWS()
+			a = a..slurpUntilWS("farg")
+			slurpWS()
+			if __inp:sub(1,1) ~= ")" then
+				if __inp:sub(1,1) ~= "," then kms("expected comma") end
+				__inp = __inp:sub(2)
+				slurpWS()
+				if __inp:sub(1,1) == close then kms("even ye folk didn't expect the dreaded trailing comma") end
+				a = a..","
+			end
+		end
+		addToLatestParse(a)
+		__inp = __inp:sub(2)
+		slurpWS()
+		if __inp:sub(1,1) ~= "{" then kms("expected curly braces to open function") end
+		__inp = __inp:sub(2)
+		goto lyarg_continue0
+	end
+	if __inp:sub(1,1)=="r" then
+		if not isWS(__inp:sub(2,2)) then kms("expected whitespace") end
+		__inp=__inp:sub(3)
+		slurpWS()
+		table.insert(parsed,"")
+		addToLatestParse("ret", expressionParse())
+		goto lyarg_continue0
+	end
+	if __inp:sub(1,1)=="}" then
+		if #fStk ~= 0 then
+			__inp=__inp:sub(2)
+			toClose = fStk[#fStk]
+			table.remove(fStk, #fStk)
+			table.insert(parsed,"")
+			addToLatestParse("nf", toClose)
+			local lastYarIdx = 0
+			local lastYargIdx = 0
+			for a,b in ipairs(yarTbl) do
+				if b=="_fn" then
+					lastYarIdx = a
+				end
+			end
+			for a,b in ipairs(yargTbl) do
+				if b=="_fn" then
+					lastYargIdx = a
+				end
+			end
+			yarTbl = {table.unpack(yarTbl, 0, lastYarIdx-1)}
+			yargTbl = {table.unpack(yargTbl, 0, lastYargIdx-1)}
+			goto lyarg_continue0 -- if #fStk == 0, fallthrough onto the kms catch all
+		end
+	end
 	kms(string.format("unknown character 0x%x", __inp:byte(1)))
 	::lyarg_continue0::
 end
-print(table.concat(parsed,"\n"))
+print(table.concat(parsed,"\n----\n"))
