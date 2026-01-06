@@ -11,6 +11,7 @@ inpIO:close()
 local __inp = inp:sub(1) -- copy of inp
 local ops = "+-*/" -- c*... nomz..
 local line = 1
+local parse4Fn = false
 
 function kms(m)
 	error(string.format("%s@%d: %s", file, line, m), 0)
@@ -69,7 +70,7 @@ function expressionParse()
 		return out
 	end
 	local pInp = __inp:sub(1)
-	local isId, id = pcall(slurpUntilWS, "id")
+	local isId, id = pcall(slurpUntilWS, parse4Fn and "farg" or "id") -- it just wouldnt work otherwise
 	if not isId then __inp = pInp end
 	if isId then
 		pInp1 = __inp:sub(1)
@@ -89,6 +90,7 @@ function expressionParse()
 	end
 	local open = isId and "(" or "["
 	if __inp:sub(1,1) == open then
+		parse4Fn = true
 		local close = isId and ")" or "]" -- ill turn this to some arithmetic on a char in c
 		out = out..open
 		__inp = __inp:sub(2)
@@ -124,6 +126,7 @@ function expressionParse()
 			end
 		end
 		__inp = __inp:sub(2)
+		parse4Fn = false
 		return out .. close
 	end
 	if __inp:sub(1,1) == "\"" then
