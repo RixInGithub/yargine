@@ -1,0 +1,104 @@
+# mckeeman form of lyarg grammar
+
+code
+	""
+	ws
+	ws code
+	ws lyarg
+	ws lyarg code
+
+lyarg
+	"yar" defltr
+	'f' reqws id ws '(' fdefguts ')' ws '{'
+	'r' expr
+	'}'
+	comment
+
+defltr
+	'g' def
+	"" def
+
+def
+	id
+	ws
+	"="
+	ws
+	expr
+
+id
+	idchr
+	idchr id
+
+idchr
+	'a' . 'z'
+	'A' . 'Z'
+	'@'
+	'#'
+	'$'
+
+ws
+	""
+	reqws ws
+
+reqws
+	'0020' reqws
+	'0009' reqws
+	"_" reqws
+
+expr
+	op reqws expr reqws expr
+	num
+	"nonexistent"
+	id
+	fcall
+	arr
+	str
+
+num
+	'0' . '9'
+	'0' . '9' num
+
+fcall
+	id ws '(' arrguts asplit ')'
+
+arr
+	'[' arrguts ']'
+
+arrguts
+	ws expr ws ',' ws arrguts
+	ws expr ws
+
+asplit
+	""
+	',' ws '{' ws arr ws ',' ws arr ws '}' ws
+
+str
+	'"' strguts '"'
+
+strguts
+	""
+	'0000' . '00FF' - '000A' - '000D' - '\' - '"' strguts
+	stresc strguts
+
+stresc
+	'\' sechr
+
+sechr
+	'r'
+	'n'
+	't'
+	'b'
+	'"'
+
+fdefguts
+	ws id ws ',' ws fdefguts
+	ws id ws
+
+comment
+	"..." cguts
+	"#!" cguts
+
+cguts
+	'000A'
+	'000D'
+	'0000' . '00FF' - '000A' - '000D' cguts

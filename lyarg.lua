@@ -283,7 +283,7 @@ while #__inp>0 do
 				kms("\"what do you mean the 'function mitosed'?\"")
 			end
 		end
-		table.insert(fTbl,name)
+		if #fStk == 0 then table.insert(fTbl,name) end -- no function scope
 		table.insert(fStk,name)
 		table.insert(yarTbl,"_fnLocals")
 		table.insert(yargTbl,"_fnLocals")
