@@ -60,3 +60,13 @@ more/template.h
 # appimages
 *.AppDir/*
 *.AppImage
+
+# debs
+debian/yargine
+debian/.debhelper
+debian/debhelper-build-stamp
+debian/files
+debian/*.substvars
+debian/*.log
+*.deb # well the debs are generated outside of yargine's dir but just in case
+yargine # idfk

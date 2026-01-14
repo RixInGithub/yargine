@@ -1,0 +1,12 @@
+Source: yargine
+Section: utils
+Priority: optional
+Maintainer: Rix the Tyrunt <rixthetyrunt+yargine@gmail.com>
+Build-Depends: debhelper-compat (= 13), libreadline-dev
+Standards-Version: 4.6.2
+
+Package: yargine
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Game engine
+ idk

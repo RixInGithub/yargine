@@ -23,6 +23,8 @@ for linux, just run `./build` and it'll automatically build for you and launch y
 also on linux you can build a `yargine.AppImage`! doesn't that sound exciting? sure it does!
 just run `./mkappimage` and it'll create and launch an `AppImage`!
 
+on debian/ubuntu you can run `debuild -uc -us` to build a `deb`! (it'll be one directory up off yargine, but oh well...)
+
 ## build online edition?
 this is definitely going to be an unix-like exclusive feature of yargine, yargine online!
 

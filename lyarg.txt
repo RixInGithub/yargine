@@ -2,9 +2,7 @@
 
 code
 	""
-	ws
 	ws code
-	ws lyarg
 	ws lyarg code
 
 lyarg

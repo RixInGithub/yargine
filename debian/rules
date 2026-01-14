@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+%:
+	dh $@
+
+override_dh_auto_build:
+	./build debian
+
+override_dh_auto_install:
+	mv yargine.x86_64 yargine
