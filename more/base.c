@@ -34,7 +34,8 @@ void openFileWithGUI(c*f) {
 	c**gio = (c*[]){"gio","open",f,NULL};
 	c**cmds = (c*[]){"xdg-open","gio","gvfs-open","kde-open","kde-open5",NULL};
 	size_t cnt = 0;
-	int satisfaction = fileno(freopen("/dev/null", "w", stdout))+fileno(freopen("/dev/null", "w", stderr)); // shit yourself [-Wunused-result]
+	int satisfaction = fileno(freopen("/dev/null", "w", stdout))+fileno(freopen("/dev/null", "w", stderr));
+	(void)satisfaction; // i mean it
 	while (cmds[cnt]!=NULL) {
 		a[0]=cmds[cnt];
 		execvp(cmds[cnt],(strcmp(cmds[cnt],"gio")==0)?gio:a); // apparently only continues on failure

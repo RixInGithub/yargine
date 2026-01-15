@@ -9,7 +9,7 @@ bool initYarg(c*name, c*main) {
 	FILE*ygFile = fopen(full,"wb");
 	if (!(ygFile)) return false;
 	memset(&thisProj,0,sizeof(thisProj));
-	strncpy(thisProj.hdr, "YARG", 4);
+	memcpy(thisProj.hdr, "YARG", 4);
 	thisProj.majorVer = YSMAJOR;
 	thisProj.projName = 1;
 	thisProj.main = 2;

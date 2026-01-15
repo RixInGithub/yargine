@@ -29,7 +29,10 @@ void renderPicker(int wd, int hi) {
 		count++;
 	}
 	printf("\x1b[0m");
-	if (reservedCols==0) return free(truncated);
+	if (reservedCols==0) {
+		free(truncated);
+		return;
+	}
 	printf("\n");
 	if (canTip) printf("%s\n", tip);
 	c*selected = "";
@@ -103,7 +106,7 @@ void __PRINT(c*s, ...) {
 	vsprintf(buf, s, args);
 	va_end(args);
 	size_t cnt = 0;
-	bool isNl, isLead;
+	bool isNl;
 	while (cnt<needed) {
 		isNl = ((buf[cnt]==10)||(buf[cnt]==13));
 		if (((xOff%wd==0)&&(xOff>0))||(isNl)) {
@@ -163,6 +166,9 @@ void renderPROJ_View(int _x, int _y, int _wd, int _hi) {
 			break;
 		case YRGS:
 			__PRINT("wip\n");
+			break;
+		default:
+			__builtin_unreachable();
 			break;
 	}
 }

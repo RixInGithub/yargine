@@ -56,7 +56,8 @@ void exitHand(int _) {
 	rl_point = 0;
 	rl_done = 1;
 	rl_pending_input = 10;
-	ssize_t satisfaction = write(1, "\n", 1); // shut up c
+	ssize_t satisfaction = write(1, "\n", 1);
+	(void)satisfaction;
 }
 
 int __readline__startupHook() {
@@ -280,7 +281,7 @@ int main(int argc, c**argv) {
 					initYarg(pName, main);
 					renderM = PROJ;
 					break;
-				case PROJ:
+				case PROJ: {
 					c*basePTitle = " - yargine" TEXTRA "!";
 					int pickerW = w/2;
 					int nameW = pickerW-strlen(basePTitle)-1;
@@ -295,6 +296,7 @@ int main(int argc, c**argv) {
 					renderPicker(pickerW,h-1);
 					renderPROJ_View(pickerW,0,w-pickerW,h);
 					break;
+				}
 				default:
 					err = "unknown render mode";
 					return 1;
@@ -379,11 +381,12 @@ int main(int argc, c**argv) {
 										freeJorked(dirStuff, dirStuffSz);
 										setupDirCnsts();
 										break;
-									case PROJ:
+									case PROJ: {
 										int incr = 1;
 										if (ch==68) incr = -1;
 										pvMode = (pvMode+incr+PVIEWS)%(PVIEWS);
 										break;
+									}
 									default:
 										__builtin_unreachable(); // neato
 										break;
